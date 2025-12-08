@@ -1,0 +1,9 @@
+﻿# STU Alumni System - Laravel Scheduler
+# Add this to crontab (crontab -e)
+
+* * * * * cd /var/www/stu-alumni && php artisan schedule:run >> /dev/null 2>&1
+
+# Additional maintenance tasks (optional)
+0 2 * * * /var/www/stu-alumni/deploy-scripts/backup-db.sh
+0 3 * * 0 php /var/www/stu-alumni/artisan alumni:cleanup-pending
+0 4 * * 1 php /var/www/stu-alumni/artisan cache:clear
