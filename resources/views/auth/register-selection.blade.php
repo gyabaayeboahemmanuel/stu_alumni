@@ -16,11 +16,11 @@
     <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div class="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
             <!-- SIS Registration Option -->
-            <div class="card p-6 mb-6 border-2 border-blue-200 hover:border-blue-400 transition duration-200">
+            <div class="card p-6 mb-6 border-2 border-stu-green hover:border-stu-green-dark transition duration-200 hover-lift">
                 <div class="flex items-start">
                     <div class="flex-shrink-0">
-                        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-graduation-cap text-blue-600 text-xl"></i>
+                        <div class="w-12 h-12 bg-gradient-to-br from-stu-green to-stu-green-dark rounded-xl flex items-center justify-center shadow-lg">
+                            <i class="fas fa-graduation-cap text-white text-xl"></i>
                         </div>
                     </div>
                     <div class="ml-4">
@@ -42,11 +42,11 @@
             </div>
 
             <!-- Manual Registration Option -->
-            <div class="card p-6 border-2 border-green-200 hover:border-green-400 transition duration-200">
+            <div class="card p-6 border-2 border-stu-green hover:border-stu-green-dark transition duration-200 hover-lift">
                 <div class="flex items-start">
                     <div class="flex-shrink-0">
-                        <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-user-edit text-green-600 text-xl"></i>
+                        <div class="w-12 h-12 bg-gradient-to-br from-stu-green to-stu-green-dark rounded-xl flex items-center justify-center shadow-lg">
+                            <i class="fas fa-user-edit text-white text-xl"></i>
                         </div>
                     </div>
                     <div class="ml-4">
@@ -70,7 +70,7 @@
             <div class="mt-6 text-center">
                 <p class="text-sm text-gray-600">
                     Already have an account?
-                    <a href="{{ route('login') }}" class="font-medium text-blue-600 hover:text-blue-500">
+                    <a href="{{ route('login') }}" class="font-medium text-stu-green hover:text-stu-green-dark">
                         Sign in here
                     </a>
                 </p>

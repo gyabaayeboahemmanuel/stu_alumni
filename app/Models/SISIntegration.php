@@ -9,6 +9,8 @@ class SISIntegration extends Model
 {
     use HasFactory, Auditable;
 
+    protected $table = 'sis_integrations';
+
     protected $fillable = [
         'student_id',
         'request_data',

@@ -31,6 +31,7 @@ class Notification extends Model
     const TYPE_VERIFICATION = 'verification';
     const TYPE_EVENT = 'event';
     const TYPE_NEWSLETTER = 'newsletter';
+    const TYPE_BROADCAST = 'broadcast';
 
     // Status constants
     const STATUS_PENDING = 'pending';
@@ -40,6 +41,8 @@ class Notification extends Model
     // Via constants
     const VIA_EMAIL = 'email';
     const VIA_SMS = 'sms';
+    const VIA_WHATSAPP = 'whatsapp';
+    const VIA_GEKYCHAT = 'gekychat';
 
     public function getAuditIdentifier(): string
     {

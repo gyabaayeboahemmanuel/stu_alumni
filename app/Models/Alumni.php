@@ -62,6 +62,14 @@ class Alumni extends Model
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * Get the chapter this alumni belongs to
+     */
+    public function chapter()
+    {
+        return $this->belongsTo(Chapter::class);
+    }
+
     public function businesses()
     {
         return $this->hasMany(Business::class);
@@ -116,6 +124,16 @@ class Alumni extends Model
     public function getAuditIdentifier(): string
     {
         return $this->full_name . " (" . $this->student_id . ")";
+    }
+
+    /**
+     * Check if professional information is incomplete
+     */
+    public function hasIncompleteProfessionalInfo(): bool
+    {
+        return empty($this->current_employer) || 
+               empty($this->job_title) || 
+               empty($this->industry);
     }
 }
 

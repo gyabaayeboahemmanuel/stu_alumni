@@ -156,8 +156,8 @@
             </form>
 
             <div class="mt-6 text-center">
-                <a href="{{ route('register') }}" class="text-sm text-blue-600 hover:text-blue-500">
-                    â† Back to registration options
+                <a href="{{ route('register') }}" class="text-sm text-blue-600 hover:text-blue-500 inline-flex items-center">
+                    <i class="fas fa-arrow-left mr-1"></i> Back to registration options
                 </a>
             </div>
         </div>

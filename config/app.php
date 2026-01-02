@@ -27,7 +27,19 @@ return [
     */
 
     'env' => env('APP_ENV', 'production'),
-
+    
+    /*
+    |--------------------------------------------------------------------------
+    | School Management System API Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Configuration for connecting to the school management system API.
+    | Uses the same pattern as IRMTS for consistency.
+    |
+    */
+    'remote_url' =>env('REMOTE', 'https://stu.edu.gh/identity/secure_staff_std'),
+    'remote_secret'=>env('CODE'),
+    
     /*
     |--------------------------------------------------------------------------
     | Application Debug Mode

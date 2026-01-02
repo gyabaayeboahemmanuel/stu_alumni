@@ -1,204 +1,177 @@
 <?php
 
 namespace App\Helpers;
-
+use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Http;
-use Exception;
-use Illuminate\Support\Facades\Log;
 
 class Fuction
 {
     /**
-     * Pull data from SIS API with comprehensive logging
+     * Create a new class instance.
      */
-    public static function pullData($staff_std_id, $entity)
+    public function __construct()
     {
-        // Use config values
-        $baseUrl = config('sis.base_url');
-        $apiKey = config('sis.api_key');
-        $timeout = config('sis.timeout');
-        $isEnabled = config('sis.enabled');
+        //
+    }
 
-        // Log verification attempt
-        Log::channel('sis')->info('SIS Verification Attempt', [
-            'student_id' => $staff_std_id,
-            'entity' => $entity,
-            'timestamp' => now()->toDateTimeString(),
-            'ip_address' => request()->ip(),
-            'user_agent' => request()->userAgent()
+    /**
+     * Pull student data from school management system
+     * Uses EXACT same logic as IRMTS Fuction helper (matching school server implementation)
+     * Alumni system ONLY handles students, not staff
+     * 
+     * @param string $student_id Student ID, email, or phone number
+     * @param string $entity Entity type: 'student' (only students are supported in Alumni system)
+     * @return array|int Response data or 0 on failure
+     */
+    public static function pullData($student_id, $entity)
+    {
+        // EXACT COPY of IRMTS implementation - do not modify the request format
+        $client = new Client();
+        $token = config('app.remote_secret');
+        
+        // Try both URLs in sequence:
+        // 1. First: https://stu.edu.gh/identity/secure_staff_std (default/config)
+        // 2. Second: https://stu.edu.gh/identity/verify_connect_api (from .env REMOTE)
+        $remoteUrls = [
+            'https://stu.edu.gh/identity/secure_staff_std',  // Default URL
+            env('REMOTE', 'https://stu.edu.gh/identity/verify_connect_api'),  // From .env
+        ];
+        
+        // Remove duplicates while preserving order
+        $remoteUrls = array_values(array_unique($remoteUrls));
+        
+        \Log::info('Starting verification with multiple URLs', [
+            'urls_to_try' => $remoteUrls,
+            'total_urls' => count($remoteUrls),
+            'identifier' => $student_id,
         ]);
-
-        // If SIS is disabled, return mock data for development
-        if (!$isEnabled) {
-            return self::getMockData($staff_std_id, $entity);
-        }
-
+        
         $data = [
-            'index_staff_id' => $staff_std_id,
+            'index_staff_id' => $student_id,
             'entity' => $entity,
         ];
 
-        try {
-            // Log API request details
-            Log::channel('sis')->debug('SIS API Request Details', [
-                'url' => $baseUrl,
-                'payload' => $data,
-                'headers' => [
-                    'Authorization' => 'Bearer ' . substr($apiKey, 0, 10) . '...', // Log partial key for security
-                    'Content-Type' => 'application/x-www-form-urlencoded'
-                ]
-            ]);
-
-            $startTime = microtime(true);
+        // Try each URL until one works - log each attempt clearly
+        $lastError = null;
+        foreach ($remoteUrls as $index => $remote) {
+            $attemptNumber = $index + 1;
             
-            $response = Http::timeout($timeout)
-                ->withOptions(['verify' => false])
-                ->withHeaders([
-                    'Authorization' => 'Bearer ' . $apiKey,
-                    'Content-Type' => 'application/x-www-form-urlencoded',
-                ])
-                ->asForm()
-                ->post($baseUrl, $data);
-
-            $responseTime = round((microtime(true) - $startTime) * 1000, 2); // Response time in ms
-
-            // Get raw response body for logging
-            $rawResponse = $response->body();
-            $responseData = $response->json();
-
-            // Comprehensive logging of API response
-            Log::channel('sis')->info('SIS API Response', [
-                'student_id' => $staff_std_id,
+            \Log::info("=== Attempt {$attemptNumber}: Verifying with {$remote} ===", [
+                'attempt' => $attemptNumber,
+                'url' => $remote,
+                'identifier' => $student_id,
                 'entity' => $entity,
-                'http_status' => $response->status(),
-                'response_time_ms' => $responseTime,
-                'response_size' => strlen($rawResponse),
-                'raw_response' => $rawResponse,
-                'parsed_response' => $responseData,
-                'success' => $response->successful()
             ]);
 
-            if ($response->successful()) {
-                // Log successful verification
-                Log::channel('sis')->notice('SIS Verification Success', [
-                    'student_id' => $staff_std_id,
-                    'entity' => $entity,
-                    'response_data_keys' => array_keys($responseData),
-                    'has_email' => !empty($responseData['email']),
-                    'has_name' => !empty($responseData['full_name']) || (!empty($responseData['first_name']) && !empty($responseData['last_name']))
-                ]);
+            try {
+                $response = Http::timeout(30)->withOptions(['verify' => false])
+                    ->withHeaders([
+                        'Authorization' => 'Bearer ' . $token,
+                    ])
+                    ->asForm()
+                    ->post($remote, $data);
 
-                return [
-                    'success' => true,
-                    'data' => $responseData,
-                    'message' => 'Data retrieved successfully',
-                    'response_time' => $responseTime
-                ];
-            } else {
-                // Log API error response
-                Log::channel('sis')->warning('SIS API Error', [
-                    'student_id' => $staff_std_id,
-                    'entity' => $entity,
+                $responseData = json_decode($response->body(), true);
+                
+                // Log the response for this attempt
+                \Log::info("Attempt {$attemptNumber} Response", [
+                    'url' => $remote,
                     'http_status' => $response->status(),
-                    'error_message' => $responseData['message'] ?? 'No error message provided',
-                    'response_data' => $responseData
+                    'response_data' => $responseData,
+                    'response_body' => $response->body(),
                 ]);
-
-                return [
-                    'success' => false,
-                    'data' => $responseData,
-                    'message' => $responseData['message'] ?? 'SIS API returned error: ' . $response->status(),
-                    'response_time' => $responseTime
-                ];
+                
+                if ($responseData) {
+                    // Check response status
+                    if (isset($responseData['status']) && $responseData['status'] == 200) {
+                        \Log::info("✓ SUCCESS: Attempt {$attemptNumber} succeeded with URL: {$remote}");
+                        return $responseData;
+                    } elseif (isset($responseData['status']) && $responseData['status'] == 404) {
+                        // Student not found - this is a valid response, but try next URL if available
+                        $errorMsg = $responseData['detail']['state'] ?? 'Student not found';
+                        \Log::warning("✗ Attempt {$attemptNumber} Error: {$errorMsg}", [
+                            'url' => $remote,
+                            'status' => 404,
+                            'error_message' => $errorMsg,
+                        ]);
+                        $lastError = $responseData;
+                        
+                        // If this is not the last URL, try the next one
+                        if ($index < count($remoteUrls) - 1) {
+                            continue;
+                        }
+                    } elseif (isset($responseData['status']) && $responseData['status'] == 401) {
+                        // Authorization error - log and try next URL
+                        $errorMsg = $responseData['detail'] ?? 'Invalid authorization';
+                        \Log::warning("✗ Attempt {$attemptNumber} Authorization Error: {$errorMsg}", [
+                            'url' => $remote,
+                            'status' => 401,
+                            'error_message' => $errorMsg,
+                        ]);
+                        $lastError = $responseData;
+                        
+                        // If this is not the last URL, try the next one
+                        if ($index < count($remoteUrls) - 1) {
+                            continue;
+                        }
+                    } else {
+                        // Other error - log and try next URL
+                        $errorMsg = $responseData['detail']['state'] ?? 'Unknown error';
+                        \Log::warning("✗ Attempt {$attemptNumber} Error: {$errorMsg}", [
+                            'url' => $remote,
+                            'status' => $responseData['status'] ?? 'unknown',
+                            'error_message' => $errorMsg,
+                        ]);
+                        $lastError = $responseData;
+                        
+                        // If this is not the last URL, try the next one
+                        if ($index < count($remoteUrls) - 1) {
+                            continue;
+                        }
+                    }
+                } else {
+                    \Log::warning("✗ Attempt {$attemptNumber} Error: Invalid response format", [
+                        'url' => $remote,
+                        'response_body' => $response->body(),
+                    ]);
+                    $lastError = ['status' => 500, 'detail' => ['state' => 'Invalid response format']];
+                }
+            } catch (\Exception $e) {
+                \Log::error("✗ Attempt {$attemptNumber} Exception: {$e->getMessage()}", [
+                    'url' => $remote,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                ]);
+                $lastError = ['status' => 500, 'detail' => ['state' => $e->getMessage()]];
+                
+                // If this is not the last URL, try the next one
+                if ($index < count($remoteUrls) - 1) {
+                    continue;
+                }
             }
-
-        } catch (Exception $e) {
-            // Log connection failures
-            Log::channel('sis')->error('SIS API Connection Failed', [
-                'student_id' => $staff_std_id,
-                'entity' => $entity,
-                'error_message' => $e->getMessage(),
-                'error_code' => $e->getCode(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'url' => $baseUrl,
-                'timestamp' => now()->toDateTimeString()
-            ]);
-
-            return [
-                'success' => false,
-                'data' => null,
-                'message' => 'Connection to SIS failed: ' . $e->getMessage()
-            ];
         }
-    }
-
-    /**
-     * Mock data for development when SIS is disabled
-     */
-    private static function getMockData($staff_std_id, $entity)
-    {
-        // Simulate API delay
-        if (config('sis.mock_data.enabled')) {
-            sleep(config('sis.mock_data.response_delay'));
-        }
-
-        // Mock response based on student ID pattern
-        $mockData = [
-            'status' => 200,
-            'message' => 'Success',
-            'data' => [
-                'full_name' => 'John Doe',
-                'email' => strtolower($staff_std_id) . '@stu.edu.gh',
-                'student_id' => $staff_std_id,
-                'programme' => 'BSc. Computer Science',
-                'graduation_year' => '2020',
-                'current_employer' => 'Tech Company Ltd',
-                'job_title' => 'Software Developer',
-                'phone' => '+233 24 123 4567',
-                'entity' => $entity,
-            ]
-        ];
-
-        Log::channel('sis')->info('Using mock SIS data', [
-            'student_id' => $staff_std_id,
+        
+        // All URLs failed - return the last error or 0
+        \Log::error('✗ All URLs failed - returning last error', [
+            'identifier' => $student_id,
             'entity' => $entity,
-            'mock_data' => $mockData,
-            'note' => 'SIS is disabled in configuration'
+            'urls_tried' => $remoteUrls,
+            'last_error' => $lastError,
         ]);
-
-        return [
-            'success' => true,
-            'data' => $mockData,
-            'message' => 'Mock data retrieved (SIS disabled)'
-        ];
+        
+        // Return the last error response if available, otherwise return 0
+        return $lastError ?? 0;
     }
 
     /**
-     * Verify if a student exists in SIS
+     * Verify if a student exists in school system
+     * This is the primary method used by the Alumni system
+     * 
+     * @param string $studentId Student ID, email, or phone number
+     * @return array|int Student data or 0 on failure
      */
     public static function verifyStudent($studentId)
     {
         return self::pullData($studentId, 'student');
-    }
-
-    /**
-     * Verify if staff exists in SIS
-     */
-    public static function verifyStaff($staffId)
-    {
-        return self::pullData($staffId, 'staff');
-    }
-
-    /**
-     * Batch verify multiple IDs
-     */
-    public static function batchVerify(array $ids, $entity = 'student')
-    {
-        $results = [];
-        foreach ($ids as $id) {
-            $results[$id] = self::pullData($id, $entity);
-        }
-        return $results;
     }
 }

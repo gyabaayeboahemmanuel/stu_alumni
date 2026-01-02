@@ -6,6 +6,7 @@ use App\Models\Alumni;
 use App\Models\Announcement;
 use App\Models\Event;
 use App\Models\Business;
+use App\Models\YearGroup;
 use App\Http\Resources\AlumniResource;
 use App\Http\Requests\UpdateAlumniProfileRequest;
 use Illuminate\Http\Request;
@@ -14,7 +15,7 @@ use Illuminate\Support\Facades\Storage;
 
 class AlumniDashboardController extends Controller
 {
-    public function dashboard()
+    public function dashboard(Request $request)
     {
         $alumni = Auth::user()->alumni;
         $recentAnnouncements = Announcement::published()
@@ -31,13 +32,27 @@ class AlumniDashboardController extends Controller
 
         $myBusinesses = $alumni->businesses()->count();
         $myEvents = $alumni->eventRegistrations()->count();
+        
+        // Get year groups for this alumni's graduation year
+        $yearGroups = YearGroup::forGraduationYear($alumni->year_of_completion);
+        
+        // Handle modal dismissal
+        if ($request->has('dismiss_profile_reminder')) {
+            session(['profile_reminder_dismissed' => true]);
+        }
+        
+        // Check if professional information is incomplete
+        $showProfileReminder = $alumni->hasIncompleteProfessionalInfo() && 
+                              !session('profile_reminder_dismissed', false);
 
         return view('alumni.dashboard', compact(
             'alumni',
             'recentAnnouncements',
             'upcomingEvents',
+            'yearGroups',
             'myBusinesses',
-            'myEvents'
+            'myEvents',
+            'showProfileReminder'
         ));
     }
 

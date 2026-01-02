@@ -13,6 +13,8 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'phone',
+        'student_id',
         'password',
         'role_id',
         'is_active',
@@ -66,9 +68,35 @@ class User extends Authenticatable
         if (!$this->alumni) {
             return 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&color=FFFFFF&background=1E40AF';
         }
-        
-        return $this->alumni->profile_photo_path 
+
+        return $this->alumni->profile_photo_path
             ? asset('storage/' . $this->alumni->profile_photo_path)
             : 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&color=FFFFFF&background=1E40AF';
+    }
+
+    /**
+     * Find user for authentication by email, phone, or student_id
+     */
+    public static function findForAuth($identifier)
+    {
+        // Try to find by email first
+        $user = static::where('email', $identifier)->first();
+        if ($user) {
+            return $user;
+        }
+
+        // Try to find by phone
+        $user = static::where('phone', $identifier)->first();
+        if ($user) {
+            return $user;
+        }
+
+        // Try to find by student_id
+        $user = static::where('student_id', $identifier)->first();
+        if ($user) {
+            return $user;
+        }
+
+        return null;
     }
 }

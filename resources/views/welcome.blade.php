@@ -3,11 +3,11 @@
 @section('title', 'Home')
 
 @section('content')
-<div class="min-h-screen bg-gradient-to-br from-green-50 to-green-100">
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
     <!-- Hero Section -->
     <div class="relative bg-stu-green text-white">
         <div class="absolute inset-0">
-            <img class="w-full h-full object-cover mix-blend-overlay opacity-20" src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2070&q=80" alt="STU Campus">
+            <img class="w-full h-full object-cover mix-blend-overlay opacity-20" src="{{ asset('stu_campus.jpg') }}" alt="STU Campus">
         </div>
         <div class="relative max-w-7xl mx-auto py-24 px-4 sm:py-32 sm:px-6 lg:px-8">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">

@@ -25,6 +25,12 @@ class AuthController extends Controller
         return view('auth.register');
     }
 
+    // Show manual registration form
+    public function showManualRegistration()
+    {
+        return view('auth.register-manual');
+    }
+
     // AJAX: Verify SIS and return data
     public function verifySIS(Request $request)
     {
@@ -72,61 +78,123 @@ class AuthController extends Controller
                 'user_agent' => $request->userAgent()
             ]);
 
-            // Call SIS API using the helper function - hardcode entity to 'student'
+            // Call school system API using the helper function - EXACT same as IRMTS
+            // IRMTS returns the raw response directly: return response()->json($result);
             $apiResponse = Fuction::pullData($request->student_id, 'student');
             
-            if ($apiResponse['success']) {
-                $sisData = $apiResponse['data'];
+            // Log the full API response received
+            Log::channel('sis')->info('School API Response Received', [
+                'student_id' => $request->student_id,
+                'response_type' => gettype($apiResponse),
+                'is_array' => is_array($apiResponse),
+                'is_zero' => ($apiResponse === 0),
+                'full_response' => $apiResponse,
+                'response_keys' => is_array($apiResponse) ? array_keys($apiResponse) : null,
+            ]);
+            
+            // Check if response is valid (not 0 or false)
+            if ($apiResponse && $apiResponse !== 0) {
+                // Check if request reached school server
+                // desc: "request success" means request hit the school server
+                $reachedSchoolServer = isset($apiResponse['desc']) && $apiResponse['desc'] === 'request success';
                 
-                // Log successful SIS integration
-                SISIntegration::create([
-                    'student_id' => $request->student_id,
-                    'request_data' => $request->all(),
-                    'response_data' => $sisData,
-                    'status' => 'success',
-                    'verified_at' => now(),
-                    'ip_address' => $request->ip(),
-                ]);
+                // IMPORTANT: Return the EXACT same structure as IRMTS
+                // IRMTS returns: response()->json($result) where $result is the raw API response
+                // So we should return the raw response, but we need to handle it for the frontend
+                
+                // Check status to determine if student was found
+                if (isset($apiResponse['status']) && $apiResponse['status'] == 200) {
+                    // Student found - log success
+                    try {
+                        SISIntegration::create([
+                            'student_id' => $request->student_id,
+                            'request_data' => $request->all(),
+                            'response_data' => $apiResponse['detail'] ?? $apiResponse,
+                            'status' => 'success',
+                            'verified_at' => now(),
+                        ]);
+                    } catch (\Exception $dbError) {
+                        Log::channel('sis')->error('Failed to log SIS integration', [
+                            'error' => $dbError->getMessage(),
+                            'student_id' => $request->student_id,
+                        ]);
+                    }
 
-                // Log successful verification
-                Log::channel('sis')->info('SIS Verification Completed Successfully', [
-                    'student_id' => $request->student_id,
-                    'response_time' => $apiResponse['response_time'] ?? 'N/A',
-                    'data_retrieved' => [
-                        'has_name' => !empty($sisData['full_name']) || (!empty($sisData['first_name']) && !empty($sisData['last_name'])),
-                        'has_email' => !empty($sisData['email']),
-                        'has_programme' => !empty($sisData['programme']),
-                        'has_graduation_year' => !empty($sisData['graduation_year'])
-                    ]
-                ]);
+                    // Return response in IRMTS format but with success wrapper for frontend
+                    return response()->json([
+                        'success' => true,
+                        'data' => $apiResponse, // Return full response like IRMTS
+                        'from_school_server' => $reachedSchoolServer,
+                    ]);
+                } else {
+                    // Student not found or error
+                    $errorMessage = 'Student ID or Phone Number not found in school system.';
+                    
+                    if (!$reachedSchoolServer) {
+                        $errorMessage = 'Unable to connect to school server. Please try again later or use alternative registration.';
+                    } elseif (isset($apiResponse['detail']['state'])) {
+                        $errorMessage = $apiResponse['detail']['state'];
+                    } elseif (isset($apiResponse['message'])) {
+                        $errorMessage = $apiResponse['message'];
+                    }
+                    
+                    try {
+                        SISIntegration::create([
+                            'student_id' => $request->student_id,
+                            'request_data' => $request->all(),
+                            'response_data' => $apiResponse,
+                            'status' => 'failed',
+                            'verified_at' => null,
+                            'error_message' => $errorMessage,
+                        ]);
+                    } catch (\Exception $dbError) {
+                        Log::channel('sis')->error('Failed to log SIS integration', [
+                            'error' => $dbError->getMessage(),
+                            'student_id' => $request->student_id,
+                        ]);
+                    }
 
-                return response()->json([
-                    'success' => true,
-                    'data' => $sisData,
-                    'message' => 'SIS verification successful! Your information has been auto-populated.'
-                ]);
+                    // Return response in IRMTS format
+                    return response()->json([
+                        'success' => false,
+                        'message' => $errorMessage,
+                        'data' => $apiResponse, // Return full response like IRMTS
+                        'from_school_server' => $reachedSchoolServer,
+                    ], 404);
+                }
             } else {
-                // Log failed SIS integration
-                SISIntegration::create([
-                    'student_id' => $request->student_id,
-                    'request_data' => $request->all(),
-                    'response_data' => $apiResponse,
-                    'status' => 'failed',
-                    'verified_at' => null,
-                    'ip_address' => $request->ip(),
-                ]);
+                // No response or error (0 returned)
+                // Log failed SIS integration (wrap in try-catch to prevent table errors)
+                try {
+                    SISIntegration::create([
+                        'student_id' => $request->student_id,
+                        'request_data' => $request->all(),
+                        'response_data' => ['error' => 'No response from school system'],
+                        'status' => 'failed',
+                        'verified_at' => null,
+                        'error_message' => 'No response from school system',
+                    ]);
+                } catch (\Exception $dbError) {
+                    Log::channel('sis')->error('Failed to log SIS integration', [
+                        'error' => $dbError->getMessage(),
+                        'student_id' => $request->student_id,
+                    ]);
+                }
 
                 // Log verification failure
-                Log::channel('sis')->warning('SIS Verification Failed', [
+                Log::channel('sis')->warning('SIS Verification Failed - No Response or Invalid Response', [
                     'student_id' => $request->student_id,
-                    'api_message' => $apiResponse['message'],
-                    'response_time' => $apiResponse['response_time'] ?? 'N/A',
-                    'ip_address' => $request->ip()
+                    'ip_address' => $request->ip(),
+                    'response_type' => gettype($apiResponse),
+                    'response_value' => $apiResponse,
+                    'is_zero' => ($apiResponse === 0),
+                    'is_false' => ($apiResponse === false),
+                    'is_null' => ($apiResponse === null),
                 ]);
 
                 return response()->json([
                     'success' => false,
-                    'message' => $apiResponse['message'] ?? 'Student ID not found in SIS system. Please use alternative registration or check your details.'
+                    'message' => 'Student ID not found in school system. Please use alternative registration or check your details.'
                 ], 404);
             }
         } catch (\Exception $e) {
@@ -178,6 +246,7 @@ class AuthController extends Controller
             $user = User::create([
                 'name' => $request->first_name . ' ' . $request->last_name,
                 'email' => $request->email,
+                'phone' => $request->phone,
                 'password' => Hash::make($autoGeneratedPassword),
                 'student_id' => $request->student_id,
                 'role_id' => Role::where('name', Role::ALUMNI)->first()->id,
@@ -193,7 +262,7 @@ class AuthController extends Controller
                 'other_names' => $request->other_names,
                 'email' => $request->email,
                 'phone' => $request->phone,
-                'graduation_year' => $request->graduation_year,
+                'year_of_completion' => $request->graduation_year, // Map graduation_year to year_of_completion
                 'programme' => $request->programme,
                 'qualification' => $request->qualification,
                 'verification_status' => 'verified',
@@ -247,11 +316,12 @@ class AuthController extends Controller
             'email' => 'required|email|unique:users,email',
             'student_id' => 'nullable|string|max:20|unique:users,student_id',
             'phone' => 'required|string|max:15',
-            'graduation_year' => 'required|integer|min:1968|max:' . (date('Y') + 1),
+            'graduation_year' => 'required|integer|min:1968|max:2013',
             'programme' => 'required|string|max:200',
             'agree_terms' => 'required|accepted',
         ], [
             'agree_terms.accepted' => 'You must agree to the terms and conditions.',
+            'graduation_year.max' => 'Manual registration is only available for alumni who graduated in 2013 or earlier. The school system started in 2014, so graduates from 2014 onwards must use SIS verification.',
         ]);
 
         if ($validator->fails()) {
@@ -272,6 +342,7 @@ class AuthController extends Controller
             $user = User::create([
                 'name' => $request->first_name . ' ' . $request->last_name,
                 'email' => $request->email,
+                'phone' => $request->phone,
                 'password' => Hash::make($autoGeneratedPassword),
                 'student_id' => $studentId,
                 'role_id' => Role::where('name', Role::ALUMNI)->first()->id,
@@ -287,7 +358,7 @@ class AuthController extends Controller
                 'other_names' => $request->other_names,
                 'email' => $request->email,
                 'phone' => $request->phone,
-                'graduation_year' => $request->graduation_year,
+                'year_of_completion' => $request->graduation_year, // Map graduation_year to year_of_completion
                 'programme' => $request->programme,
                 'verification_status' => 'pending',
                 'verification_source' => 'manual',
@@ -339,8 +410,10 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'email' => 'required|email',
+            'identifier' => 'required|string|max:255',
             'password' => 'required|string',
+        ], [
+            'identifier.required' => 'Please enter your email, phone number, or student ID.',
         ]);
 
         if ($validator->fails()) {
@@ -350,15 +423,53 @@ class AuthController extends Controller
                     'errors' => $validator->errors()
                 ], 422);
             }
-            return back()->withErrors($validator)->onlyInput('email');
+            return back()->withErrors($validator)->onlyInput('identifier');
         }
 
-        $credentials = $request->only('email', 'password');
+        // Find user by email, phone, or student_id
+        $user = User::findForAuth($request->identifier);
+
+        if (!$user) {
+            $errorResponse = [
+                'identifier' => 'The provided credentials do not match our records.',
+            ];
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'errors' => $errorResponse
+                ], 401);
+            }
+
+            return back()->withErrors($errorResponse)->onlyInput('identifier');
+        }
+
+        // Check if user is active
+        if (!$user->is_active) {
+            $errorResponse = [
+                'identifier' => 'Your account has been deactivated. Please contact support.',
+            ];
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'errors' => $errorResponse
+                ], 401);
+            }
+
+            return back()->withErrors($errorResponse)->onlyInput('identifier');
+        }
+
+        // Attempt authentication with the found user's email
+        $credentials = [
+            'email' => $user->email,
+            'password' => $request->password
+        ];
         $remember = $request->has('remember');
 
         if (Auth::attempt($credentials, $remember)) {
             $request->session()->regenerate();
-            
+
             // Update last login
             Auth::user()->update(['last_login_at' => now()]);
 
@@ -379,7 +490,7 @@ class AuthController extends Controller
         }
 
         $errorResponse = [
-            'email' => 'The provided credentials do not match our records.',
+            'identifier' => 'The provided credentials do not match our records.',
         ];
 
         if ($request->expectsJson()) {
@@ -389,7 +500,7 @@ class AuthController extends Controller
             ], 401);
         }
 
-        return back()->withErrors($errorResponse)->onlyInput('email');
+        return back()->withErrors($errorResponse)->onlyInput('identifier');
     }
 
     // Logout

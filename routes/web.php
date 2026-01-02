@@ -8,6 +8,10 @@ use App\Http\Controllers\Admin\AlumniManagementController as AdminAlumniControll
 use App\Http\Controllers\Admin\AnnouncementManagementController as AdminAnnouncementController;
 use App\Http\Controllers\Admin\EventManagementController as AdminEventController;
 use App\Http\Controllers\Admin\ReportsController as AdminReportsController;
+use App\Http\Controllers\Admin\SettingsController as AdminSettingsController;
+use App\Http\Controllers\Admin\YearGroupController as AdminYearGroupController;
+use App\Http\Controllers\Admin\ChapterController as AdminChapterController;
+use App\Http\Controllers\Admin\BroadcastController as AdminBroadcastController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -30,6 +34,8 @@ Route::get('/', function () {
 Route::middleware('guest')->group(function () {
     // Registration
     Route::get('/register', [AuthController::class, 'register'])->name('register');
+    Route::get('/register/sis', [AuthController::class, 'register'])->name('register.sis');
+    Route::get('/register/manual', [AuthController::class, 'showManualRegistration'])->name('register.manual');
     
     // SIS Registration Process
     Route::post('/verify-sis', [AuthController::class, 'verifySIS'])->name('verify.sis');
@@ -133,6 +139,25 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
         Route::get('/export-alumni', [AdminReportsController::class, 'exportAlumni'])->name('export-alumni');
         Route::get('/system-stats', [AdminReportsController::class, 'systemStats'])->name('system-stats');
     });
+    
+    // Settings
+    Route::get('/settings', [AdminSettingsController::class, 'index'])->name('settings.index');
+    Route::put('/settings', [AdminSettingsController::class, 'update'])->name('settings.update');
+    Route::post('/settings/test-notification', [AdminSettingsController::class, 'testNotification'])->name('settings.test-notification');
+    
+    // Year Groups
+    Route::resource('year-groups', AdminYearGroupController::class)->except(['show']);
+    Route::patch('/year-groups/{yearGroup}/toggle-active', [AdminYearGroupController::class, 'toggleActive'])->name('year-groups.toggle-active');
+    
+    // Chapters
+    Route::resource('chapters', AdminChapterController::class)->except(['show']);
+    Route::get('/chapters/pending/list', [AdminChapterController::class, 'pending'])->name('chapters.pending');
+    Route::patch('/chapters/{chapter}/approve', [AdminChapterController::class, 'approve'])->name('chapters.approve');
+    Route::patch('/chapters/{chapter}/toggle-active', [AdminChapterController::class, 'toggleActive'])->name('chapters.toggle-active');
+    
+    // Broadcast Messages
+    Route::get('/broadcast', [AdminBroadcastController::class, 'index'])->name('broadcast.index');
+    Route::post('/broadcast/send', [AdminBroadcastController::class, 'send'])->name('broadcast.send');
 });
 
 // Fallback Route

@@ -3,13 +3,19 @@
 @section('title', 'Register - STU Alumni')
 
 @section('content')
-<div class="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex flex-col justify-center py-8 sm:py-12">
-    <div class="w-full max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="min-h-screen flex flex-col justify-center py-8 sm:py-12 relative overflow-hidden">
+    <!-- Campus Background -->
+    <div class="absolute inset-0 z-0">
+        <img src="{{ asset('stu_campus.jpg') }}" alt="STU Campus" class="w-full h-full object-cover">
+        <div class="absolute inset-0 bg-gradient-to-br from-white/95 via-white/90 to-gray-100/95"></div>
+    </div>
+    
+    <div class="w-full max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <!-- Enhanced Logo Section -->
         <div class="flex justify-center mb-6">
             <div class="relative">
-                <div class="w-16 h-16 bg-stu-green rounded-2xl flex items-center justify-center shadow-lg">
-                    <span class="text-white font-bold text-xl">STU</span>
+                <div class="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-lg border-2 border-stu-green/20">
+                    <img src="{{ asset('stu_logo.png') }}" alt="STU Logo" class="w-14 h-14">
                 </div>
                 <div class="absolute -bottom-2 -right-2 w-6 h-6 bg-stu-red rounded-full flex items-center justify-center">
                     <i class="fas fa-graduation-cap text-white text-xs"></i>
@@ -25,8 +31,8 @@
         </p>
     </div>
 
-    <div class="w-full max-w-2xl mx-auto mt-6 px-4 sm:px-6 lg:px-8">
-        <div class="bg-white/80 backdrop-blur-sm py-8 px-6 sm:px-8 shadow-2xl border border-white/20 rounded-3xl">
+    <div class="w-full max-w-2xl mx-auto mt-6 px-4 sm:px-6 lg:px-8 relative z-10">
+        <div class="bg-white/95 backdrop-blur-md py-8 px-6 sm:px-8 shadow-2xl border border-white/20 rounded-3xl">
             <!-- Compact Progress Bar -->
             <div class="flex justify-center mb-8">
                 <div class="flex items-center space-x-2">
@@ -49,12 +55,12 @@
             <!-- SIS Verification Section -->
             <div id="sisVerificationSection" class="fade-in">
                 <div class="text-center mb-8">
-                    <div class="w-14 h-14 bg-gradient-to-br from-green-100 to-green-200 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-                        <i class="fas fa-id-card text-stu-green text-xl"></i>
+                    <div class="w-14 h-14 bg-gradient-to-br from-stu-green to-stu-green-dark rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                        <i class="fas fa-id-card text-white text-xl"></i>
                     </div>
                     <h3 class="text-lg font-semibold text-gray-900 mb-2 tracking-tight">Verify Your Identity</h3>
                     <p class="text-sm text-gray-600 leading-relaxed">
-                        Enter your Student ID to verify your alumni status
+                        Enter your Student ID or Phone Number to verify your alumni status
                     </p>
                 </div>
 
@@ -64,17 +70,18 @@
                     <div class="space-y-6">
                         <div>
                             <label for="student_id" class="block text-sm font-medium text-gray-700 mb-2 tracking-wide">
-                                Student ID <span class="text-stu-red">*</span>
+                                Student ID or Phone Number <span class="text-stu-red">*</span>
                             </label>
                             <div class="relative group">
                                 <input type="text" id="student_id" name="student_id" required
                                        class="w-full px-4 py-3 pl-11 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-stu-green/20 focus:border-stu-green transition-all duration-200 shadow-sm group-hover:shadow-md placeholder-gray-400 text-gray-900 tracking-wide"
-                                       placeholder="STU123456"
+                                       placeholder="STU123456 or +233 XX XXX XXXX"
                                        value="{{ old('student_id') }}">
                                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                                     <i class="fas fa-user-graduate"></i>
                                 </div>
                             </div>
+                            <p class="mt-1 text-xs text-gray-500">You can enter either your Student ID or registered phone number</p>
                             <div id="student_id_error" class="hidden mt-2 text-sm text-red-600 tracking-wide"></div>
                         </div>
 
@@ -180,23 +187,22 @@
                                 <input type="number" id="manual_graduation_year" name="graduation_year" required
                                        class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-stu-green/20 focus:border-stu-green transition-all duration-200 shadow-sm hover:shadow-md placeholder-gray-400 text-gray-900 tracking-wide"
                                        value="{{ old('graduation_year') }}"
-                                       min="1968" max="{{ date('Y') + 1 }}"
-                                       placeholder="2020">
+                                       min="1968" max="2013"
+                                       placeholder="2010">
+                                <p class="mt-1 text-xs text-gray-600">
+                                    <i class="fas fa-info-circle text-stu-green mr-1"></i>
+                                    Manual registration is only for alumni who graduated in 2013 or earlier. If you graduated in 2014 or later, please use SIS verification.
+                                </p>
+                                <div id="manual_graduation_year_error" class="hidden mt-2 text-sm text-red-600 tracking-wide"></div>
                             </div>
                         </div>
 
                         <div>
                             <label for="manual_programme" class="block text-sm font-medium text-gray-700 mb-2 tracking-wide">Programme *</label>
-                            <select id="manual_programme" name="programme" required 
-                                    class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-stu-green/20 focus:border-stu-green transition-all duration-200 shadow-sm hover:shadow-md text-gray-900 tracking-wide appearance-none cursor-pointer">
-                                <option value="">Select Programme</option>
-                                <option value="Computer Science">Computer Science</option>
-                                <option value="Business Administration">Business Administration</option>
-                                <option value="Engineering">Engineering</option>
-                                <option value="Health Sciences">Health Sciences</option>
-                                <option value="Education">Education</option>
-                                <option value="Other">Other</option>
-                            </select>
+                            <input type="text" id="manual_programme" name="programme" required
+                                   class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-stu-green/20 focus:border-stu-green transition-all duration-200 shadow-sm hover:shadow-md placeholder-gray-400 text-gray-900 tracking-wide"
+                                   value="{{ old('programme') }}"
+                                   placeholder="e.g., BSc. Computer Science">
                         </div>
 
                         <!-- Password Notice -->
@@ -387,6 +393,21 @@ body {
     from { transform: translateX(16px); opacity: 0; }
     to { transform: translateX(0); opacity: 1; }
 }
+
+.animate-fade-in-up {
+    animation: fadeInUp 0.3s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
 </style>
 @endpush
 
@@ -418,10 +439,20 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Add input formatting for Student ID
+    // Input formatting - allow Student ID or Phone Number
     const studentIdInput = document.getElementById('student_id');
     studentIdInput.addEventListener('input', function() {
-        this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        // Allow alphanumeric for Student ID or phone number format
+        // Don't restrict to uppercase only, allow phone numbers with +, spaces, dashes
+        const value = this.value;
+        // If it starts with + or contains digits, it's likely a phone number
+        if (value.startsWith('+') || /^\d/.test(value)) {
+            // Allow phone number format: +233 XX XXX XXXX or 0XX XXX XXXX
+            this.value = value.replace(/[^\d+\s-]/g, '');
+        } else {
+            // For Student ID, allow alphanumeric
+            this.value = value.replace(/[^A-Za-z0-9]/g, '');
+        }
     });
 
     // Show manual registration form
@@ -444,7 +475,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const studentId = studentIdInput.value.trim();
         
         if (!studentId) {
-            showError('student_id', 'Please enter your Student ID');
+            showError('student_id', 'Please enter your Student ID or Phone Number');
             return;
         }
 
@@ -476,17 +507,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
             console.log('Response status:', response.status);
             
-            if (!response.ok) {
-                // Handle HTTP errors
-                if (response.status === 503) {
-                    throw new Error('Service temporarily unavailable. Please try alternative registration.');
-                }
-                if (response.status === 404) {
-                    throw new Error('Student ID not found. Please use alternative registration.');
-                }
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
+            // Always try to parse JSON response, even for error status codes
+            // This allows us to get error messages and server connection status
             const responseText = await response.text();
             console.log('Raw response:', responseText);
             
@@ -499,14 +521,56 @@ document.addEventListener('DOMContentLoaded', function() {
             } catch (parseError) {
                 console.error('JSON Parse Error:', parseError);
                 console.error('Response text that failed to parse:', responseText);
+                
+                // If we can't parse JSON and it's an error status, throw generic error
+                if (!response.ok) {
+                    if (response.status === 503) {
+                        throw new Error('Service temporarily unavailable. Please try alternative registration.');
+                    }
+                    if (response.status === 404) {
+                        throw new Error('Student ID or Phone Number not found. Please use alternative registration.');
+                    }
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
                 throw new Error('Invalid response from server. Please try again.');
+            }
+            
+            // If response is not ok and we have parsed data, use the error message from server
+            if (!response.ok && data) {
+                // Use server-provided error message if available
+                let errorMessage = data.message || 
+                    (response.status === 404 ? 'Student ID or Phone Number not found. Please use alternative registration.' : 
+                     response.status === 503 ? 'Service temporarily unavailable. Please try alternative registration.' :
+                     `HTTP error! status: ${response.status}`);
+                
+                // Add server connection status if available
+                if (data.server_response) {
+                    errorMessage += `\n\n${data.server_response}`;
+                }
+                
+                // Create error object with additional info
+                const error = new Error(errorMessage);
+                error.fromSchoolServer = data.from_school_server;
+                error.serverResponse = data.server_response;
+                throw error;
             }
 
             if (data.success) {
                 verifyButton.classList.add('bg-green-500');
+                
+                // Show success message with server connection status
+                let successMessage = 'SIS verification successful! Your information has been auto-populated.';
+                if (data.from_school_server !== undefined) {
+                    const serverStatus = data.from_school_server 
+                        ? '✓ Response verified from school server' 
+                        : '⚠ Response may not be from school server';
+                    successMessage += `\n\n${serverStatus}`;
+                }
+                
                 setTimeout(() => {
                     verificationSection.classList.add('hidden');
                     sisSection.classList.remove('hidden');
+                    // data.data contains the full API response like IRMTS: {status: 200, desc: "...", detail: {...}}
                     populateSISForm(data.data);
                     updateProgress(2);
                 }, 500);
@@ -514,16 +578,35 @@ document.addEventListener('DOMContentLoaded', function() {
                 verificationSection.classList.add('hidden');
                 manualSection.classList.remove('hidden');
                 updateProgress(2);
-                if (data.message) {
-                    showAlert('info', data.message);
+                
+                // Show error message with server connection status
+                let errorMessage = data.message || 'Verification failed. Please use alternative registration.';
+                if (data.from_school_server !== undefined) {
+                    const serverStatus = data.from_school_server 
+                        ? '✓ Response from school server' 
+                        : '⚠ Connection issue - Request did not reach school server';
+                    errorMessage += `\n\n${serverStatus}`;
                 }
+                
+                showAlert(data.from_school_server === false ? 'warning' : 'error', errorMessage);
             }
         } catch (error) {
             console.error('Verification Error:', error);
             verificationSection.classList.add('hidden');
             manualSection.classList.remove('hidden');
             updateProgress(2);
-            showAlert('error', error.message || 'Verification service unavailable. Please use alternative registration.');
+            
+            // Check if error has server connection info (from parsed response)
+            let errorMessage = error.message || 'Verification service unavailable. Please use alternative registration or try again later.';
+            
+            // If error has server connection status, include it
+            if (error.serverResponse) {
+                errorMessage += `\n\n${error.serverResponse}`;
+            }
+            
+            // Determine alert type based on connection status
+            const alertType = error.fromSchoolServer === false ? 'warning' : 'error';
+            showAlert(alertType, errorMessage);
         } finally {
             verifyText.classList.remove('hidden');
             verifyingSpinner.classList.add('hidden');
@@ -533,29 +616,68 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     function populateSISForm(sisData) {
-        const data = sisData.data || sisData;
+        // Handle response structure: {success: true, data: {detail: {...}} or {data: {...}}}
+        // School API returns: {status: 200, desc: "...", detail: {...student data...}}
+        let data = sisData;
         
-        // Personal Information
-        if (data.full_name) {
+        // If data has a 'data' property, use it (backend wraps it)
+        if (sisData.data) {
+            data = sisData.data;
+        }
+        
+        // If data has a 'detail' property, use it (direct API response)
+        if (data.detail) {
+            data = data.detail;
+        }
+        
+        // Personal Information - handle both API formats
+        // API returns: fullname, surname, othernames
+        // Also check for: full_name, first_name, last_name, other_names
+        if (data.fullname) {
+            // API format: "PEPRAH , LAWRENCE " or "SURNAME, FIRSTNAME"
+            const fullName = data.fullname.trim();
+            if (fullName.includes(',')) {
+                // Format: "SURNAME, FIRSTNAME"
+                const parts = fullName.split(',').map(p => p.trim());
+                setValue('last_name', parts[0] || '');
+                setValue('first_name', parts[1] || '');
+            } else {
+                // Format: "FIRSTNAME LASTNAME"
+                const nameParts = fullName.split(' ').filter(p => p);
+                setValue('first_name', nameParts[0] || '');
+                setValue('last_name', nameParts.slice(1).join(' ') || '');
+            }
+        } else if (data.full_name) {
             const nameParts = data.full_name.split(' ');
             setValue('first_name', nameParts[0] || '');
             setValue('last_name', nameParts.slice(1).join(' ') || '');
         } else {
+            // Use separate fields
             setValue('first_name', data.first_name || '');
-            setValue('last_name', data.last_name || '');
+            setValue('last_name', data.last_name || data.surname || '');
         }
         
-        setValue('other_names', data.other_names || '');
+        // Other names - API uses 'othernames', also check 'other_names'
+        setValue('other_names', data.othernames || data.other_names || '');
+        
+        // Contact Information
         setValue('email', data.email || '');
         setValue('phone', data.phone || '');
         
         // Academic Information
-        setValue('student_id_reg', data.student_id || studentIdInput.value);
-        setValue('programme', data.programme || data.department || '');
-        setValue('graduation_year', data.graduation_year || data.year_of_completion || '');
-        setValue('qualification', data.qualification || data.certification || '');
+        // API uses 'index_number', also check 'student_id'
+        setValue('student_id_reg', data.index_number || data.student_id || data.index_staff_id || studentIdInput.value);
         
-        // Store SIS data in hidden field
+        // API uses 'program', also check 'programme', 'department'
+        setValue('programme', data.program || data.programme || data.department || '');
+        
+        // Graduation year - API might not have this, check various fields
+        setValue('graduation_year', data.graduation_year || data.year_of_completion || data.graduation || '');
+        
+        // Qualification - API might not have this directly
+        setValue('qualification', data.qualification || data.certification || data.program || '');
+        
+        // Store SIS data in hidden field (store the full response)
         setValue('sis_data', JSON.stringify(sisData));
     }
 
@@ -597,6 +719,25 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    // Add graduation year validation for manual registration
+    const manualGradYearInput = document.getElementById('manual_graduation_year');
+    if (manualGradYearInput) {
+        manualGradYearInput.addEventListener('input', function() {
+            const year = parseInt(this.value);
+            const errorDiv = document.getElementById('manual_graduation_year_error');
+            
+            if (year && year >= 2014) {
+                this.classList.add('border-red-500', 'focus:ring-red-500', 'focus:border-red-500');
+                errorDiv.classList.remove('hidden');
+                errorDiv.textContent = 'Graduates from 2014 onwards must use SIS verification. Manual registration is only for 2013 and earlier.';
+            } else {
+                this.classList.remove('border-red-500', 'focus:ring-red-500', 'focus:border-red-500');
+                errorDiv.classList.add('hidden');
+                errorDiv.textContent = '';
+            }
+        });
+    }
+
     // Add form submission handling for both forms
     const forms = ['sisRegistrationForm', 'manualRegistrationForm'];
     
@@ -605,6 +746,16 @@ document.addEventListener('DOMContentLoaded', function() {
         if (form) {
             form.addEventListener('submit', async function(e) {
                 e.preventDefault();
+                
+                // Additional validation for manual registration
+                if (formId === 'manualRegistrationForm') {
+                    const gradYear = parseInt(document.getElementById('manual_graduation_year').value);
+                    if (gradYear && gradYear >= 2014) {
+                        showAlert('error', 'Alumni who graduated in 2014 or later must use SIS verification. Manual registration is only available for those who graduated in 2013 or earlier, as the school system started in 2014.');
+                        return;
+                    }
+                }
+                
                 await submitRegistrationForm(this);
             });
         }
@@ -675,10 +826,113 @@ document.addEventListener('DOMContentLoaded', function() {
         return errorElement;
     }
 
+    // HTML Modal Alert System
     function showAlert(type, message) {
-        // Simple alert implementation
-        alert(`${type.toUpperCase()}: ${message}`);
+        // Remove existing modal if any
+        const existingModal = document.getElementById('alertModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        // Create modal overlay
+        const modal = document.createElement('div');
+        modal.id = 'alertModal';
+        modal.className = 'fixed inset-0 z-50 flex items-center justify-center p-4';
+        modal.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+        modal.style.backdropFilter = 'blur(4px)';
+        
+        // Determine icon and colors based on type
+        let iconClass, bgColor, iconBg, textColor, borderColor;
+        switch(type.toLowerCase()) {
+            case 'success':
+                iconClass = 'fa-check-circle';
+                bgColor = 'bg-green-50';
+                iconBg = 'bg-green-100';
+                textColor = 'text-green-800';
+                borderColor = 'border-green-200';
+                break;
+            case 'error':
+                iconClass = 'fa-exclamation-circle';
+                bgColor = 'bg-red-50';
+                iconBg = 'bg-red-100';
+                textColor = 'text-red-800';
+                borderColor = 'border-red-200';
+                break;
+            case 'warning':
+                iconClass = 'fa-exclamation-triangle';
+                bgColor = 'bg-yellow-50';
+                iconBg = 'bg-yellow-100';
+                textColor = 'text-yellow-800';
+                borderColor = 'border-yellow-200';
+                break;
+            case 'info':
+            default:
+                iconClass = 'fa-info-circle';
+                bgColor = 'bg-blue-50';
+                iconBg = 'bg-blue-100';
+                textColor = 'text-blue-800';
+                borderColor = 'border-blue-200';
+                break;
+        }
+
+        // Create modal content
+        modal.innerHTML = `
+            <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full transform transition-all animate-fade-in-up ${bgColor} border-2 ${borderColor}">
+                <div class="p-6">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <div class="w-12 h-12 ${iconBg} rounded-full flex items-center justify-center">
+                                <i class="fas ${iconClass} text-xl ${textColor}"></i>
+                            </div>
+                        </div>
+                        <div class="ml-4 flex-1">
+                            <h3 class="text-lg font-semibold ${textColor} mb-2">${type.charAt(0).toUpperCase() + type.slice(1)}</h3>
+                            <p class="text-sm ${textColor} leading-relaxed">${message}</p>
+                        </div>
+                    </div>
+                    <div class="mt-6 flex justify-end">
+                        <button onclick="closeAlertModal()" class="px-6 py-2 bg-stu-green hover:bg-stu-green-dark text-white font-semibold rounded-xl transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105">
+                            OK
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Add to body
+        document.body.appendChild(modal);
+
+        // Animate in
+        setTimeout(() => {
+            modal.querySelector('div.bg-white').style.transform = 'scale(1)';
+        }, 10);
+
+        // Auto close after 5 seconds for info/success, 8 seconds for errors
+        const autoCloseTime = (type === 'error' || type === 'warning') ? 8000 : 5000;
+        setTimeout(() => {
+            closeAlertModal();
+        }, autoCloseTime);
     }
+
+    // Close modal function
+    window.closeAlertModal = function() {
+        const modal = document.getElementById('alertModal');
+        if (modal) {
+            modal.querySelector('div.bg-white').style.transform = 'scale(0.95)';
+            modal.style.opacity = '0';
+            setTimeout(() => {
+                modal.remove();
+            }, 200);
+        }
+    };
+
+    // Close on overlay click
+    document.addEventListener('click', function(e) {
+        const modal = document.getElementById('alertModal');
+        if (modal && e.target === modal) {
+            closeAlertModal();
+        }
+    });
 });
 </script>
 @endpush
