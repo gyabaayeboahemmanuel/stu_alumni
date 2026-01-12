@@ -42,7 +42,7 @@ class RoleSeeder extends Seeder
                 ]),
             ],
             [
-                'name' => 'Alumni',
+                'name' => Role::ALUMNI,
                 'description' => 'Standard alumni user',
                 'permissions' => json_encode([
                     'view_profile',
