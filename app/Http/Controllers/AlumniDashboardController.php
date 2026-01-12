@@ -7,6 +7,7 @@ use App\Models\Announcement;
 use App\Models\Event;
 use App\Models\Business;
 use App\Models\YearGroup;
+use App\Models\Chapter;
 use App\Http\Resources\AlumniResource;
 use App\Http\Requests\UpdateAlumniProfileRequest;
 use Illuminate\Http\Request;
@@ -59,7 +60,9 @@ class AlumniDashboardController extends Controller
     public function profile()
     {
         $alumni = Auth::user()->alumni;
-        return view('alumni.profile', compact('alumni'));
+        $chapters = Chapter::active()->orderBy('name')->get();
+        $yearGroups = YearGroup::forGraduationYear($alumni->year_of_completion);
+        return view('alumni.profile', compact('alumni', 'chapters', 'yearGroups'));
     }
 
     // API endpoint for getting alumni profile
@@ -109,6 +112,7 @@ class AlumniDashboardController extends Controller
             'twitter' => 'nullable|url|max:200',
             'facebook' => 'nullable|url|max:200',
             'is_visible_in_directory' => 'boolean',
+            'chapter_id' => 'nullable|exists:chapters,id',
         ]);
 
         $alumni->update($validated);

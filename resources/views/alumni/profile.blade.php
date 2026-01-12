@@ -257,6 +257,105 @@
                             </div>
                         </div>
 
+                        <!-- Chapter and Year Group Section -->
+                        <div>
+                            <div class="flex items-center mb-6">
+                                <div class="w-1 h-8 bg-gradient-to-b from-stu-green to-stu-green-dark rounded-full mr-4"></div>
+                                <h3 class="text-xl font-bold text-gray-900">Chapter & Year Groups</h3>
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label for="chapter_id" class="form-label">Chapter</label>
+                                    <select id="chapter_id" name="chapter_id" class="form-control @error('chapter_id') is-invalid @enderror">
+                                        <option value="">-- Select a Chapter (Optional) --</option>
+                                        @foreach($chapters as $chapter)
+                                            <option value="{{ $chapter->id }}" {{ old('chapter_id', $alumni->chapter_id) == $chapter->id ? 'selected' : '' }}>
+                                                {{ $chapter->name }} 
+                                                @if($chapter->full_location)
+                                                    - {{ $chapter->full_location }}
+                                                @endif
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @error('chapter_id')
+                                        <div class="invalid-feedback">
+                                            <i class="fas fa-exclamation-circle me-1"></i>{{ $message }}
+                                        </div>
+                                    @enderror
+                                    <div class="form-text">
+                                        <i class="fas fa-info-circle me-1"></i> Join a local chapter to connect with alumni in your area
+                                    </div>
+                                </div>
+
+                                @if($yearGroups->count() > 0)
+                                <div class="col-12">
+                                    <label class="form-label">Your Year Groups</label>
+                                    <div class="bg-gray-50 rounded-xl p-4 border-2 border-gray-200">
+                                        <p class="text-sm text-gray-600 mb-3">
+                                            <i class="fas fa-calendar-check me-2 text-stu-green"></i>
+                                            Based on your graduation year ({{ $alumni->year_of_completion }}), you belong to the following year groups:
+                                        </p>
+                                        <div class="space-y-2">
+                                            @foreach($yearGroups as $yearGroup)
+                                                <div class="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                                                    <div class="flex items-center">
+                                                        <div class="w-10 h-10 bg-gradient-to-br from-stu-green to-stu-green-dark rounded-lg flex items-center justify-center mr-3">
+                                                            <i class="fas fa-users text-white text-sm"></i>
+                                                        </div>
+                                                        <div>
+                                                            <div class="font-semibold text-gray-900">{{ $yearGroup->name }}</div>
+                                                            <div class="text-sm text-gray-600">{{ $yearGroup->start_year }} - {{ $yearGroup->end_year }}</div>
+                                                            @if($yearGroup->description)
+                                                                <div class="text-xs text-gray-500 mt-1">{{ $yearGroup->description }}</div>
+                                                            @endif
+                                                        </div>
+                                                    </div>
+                                                    @if($yearGroup->hasSocialLinks())
+                                                        <div class="flex space-x-2">
+                                                            @if($yearGroup->whatsapp_link)
+                                                                <a href="{{ $yearGroup->whatsapp_link }}" target="_blank" 
+                                                                   class="w-8 h-8 bg-green-500 hover:bg-green-600 rounded-full flex items-center justify-center text-white transition-colors"
+                                                                   title="Join WhatsApp Group">
+                                                                    <i class="fab fa-whatsapp text-sm"></i>
+                                                                </a>
+                                                            @endif
+                                                            @if($yearGroup->telegram_link)
+                                                                <a href="{{ $yearGroup->telegram_link }}" target="_blank" 
+                                                                   class="w-8 h-8 bg-blue-500 hover:bg-blue-600 rounded-full flex items-center justify-center text-white transition-colors"
+                                                                   title="Join Telegram Group">
+                                                                    <i class="fab fa-telegram text-sm"></i>
+                                                                </a>
+                                                            @endif
+                                                            @if($yearGroup->gekychat_link)
+                                                                <a href="{{ $yearGroup->gekychat_link }}" target="_blank" 
+                                                                   class="w-8 h-8 bg-purple-500 hover:bg-purple-600 rounded-full flex items-center justify-center text-white transition-colors"
+                                                                   title="Join GekyChat Group">
+                                                                    <i class="fas fa-comments text-sm"></i>
+                                                                </a>
+                                                            @endif
+                                                        </div>
+                                                    @endif
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                </div>
+                                @else
+                                <div class="col-12">
+                                    <div class="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-4">
+                                        <div class="flex items-center">
+                                            <i class="fas fa-info-circle text-yellow-600 mr-2"></i>
+                                            <span class="text-sm text-yellow-800">
+                                                No year groups are currently configured for your graduation year ({{ $alumni->year_of_completion }}). 
+                                                Contact an administrator to set up year groups.
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                @endif
+                            </div>
+                        </div>
+
                         <!-- Social Links Section -->
                         <div>
                             <div class="flex items-center mb-6">

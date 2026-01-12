@@ -43,6 +43,7 @@ class Alumni extends Model
         'is_visible_in_directory',
         'registration_method',
         'proof_document_path',
+        'chapter_id',
     ];
 
     protected $casts = [

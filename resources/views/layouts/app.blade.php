@@ -539,7 +539,7 @@
                             
                             <div x-show="open" @click.away="open = false" 
                                  class="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-50"
-                                 style="background-color: white; color: #374151;"
+                                 style="background-color: white !important;"
                                  x-transition:enter="transition ease-out duration-100"
                                  x-transition:enter-start="transform opacity-0 scale-95"
                                  x-transition:enter-end="transform opacity-100 scale-100"
@@ -547,29 +547,29 @@
                                  x-transition:leave-start="transform opacity-100 scale-100"
                                  x-transition:leave-end="transform opacity-0 scale-95">
                                 @if(Auth::user()->isAdmin())
-                                    <a href="{{ route('admin.dashboard') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 bg-white" style="color: #374151;">
-                                        <i class="fas fa-tachometer-alt mr-2 text-stu-green"></i>Admin Dashboard
+                                    <a href="{{ route('admin.dashboard') }}" class="block px-4 py-2 text-sm hover:bg-gray-100" style="color: #1B5E20 !important;">
+                                        <i class="fas fa-tachometer-alt mr-2" style="color: #1B5E20;"></i>Admin Dashboard
                                     </a>
-                                    <a href="{{ route('admin.settings.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 bg-white" style="color: #374151;">
-                                        <i class="fas fa-cog mr-2 text-stu-green"></i>Settings
+                                    <a href="{{ route('admin.settings.index') }}" class="block px-4 py-2 text-sm hover:bg-gray-100" style="color: #1B5E20 !important;">
+                                        <i class="fas fa-cog mr-2" style="color: #1B5E20;"></i>Settings
                                     </a>
                                 @elseif(Auth::user()->alumni)
-                                    <a href="{{ route('alumni.dashboard') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 bg-white" style="color: #374151;">
-                                        <i class="fas fa-tachometer-alt mr-2 text-stu-green"></i>Dashboard
+                                    <a href="{{ route('alumni.dashboard') }}" class="block px-4 py-2 text-sm hover:bg-gray-100" style="color: #1B5E20 !important;">
+                                        <i class="fas fa-tachometer-alt mr-2" style="color: #1B5E20;"></i>Dashboard
                                     </a>
-                                    <a href="{{ route('alumni.profile') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 bg-white" style="color: #374151;">
-                                        <i class="fas fa-user mr-2 text-stu-green"></i>Profile
+                                    <a href="{{ route('alumni.profile') }}" class="block px-4 py-2 text-sm hover:bg-gray-100" style="color: #1B5E20 !important;">
+                                        <i class="fas fa-user mr-2" style="color: #1B5E20;"></i>Profile
                                     </a>
                                     {{-- Connections feature not yet implemented --}}
-                                    {{-- <a href="{{ route('alumni.connections') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 bg-white" style="color: #374151;">
-                                        <i class="fas fa-users mr-2 text-stu-green"></i>Connections
+                                    {{-- <a href="{{ route('alumni.connections') }}" class="block px-4 py-2 text-sm hover:bg-gray-100" style="color: #1B5E20 !important;">
+                                        <i class="fas fa-users mr-2" style="color: #1B5E20;"></i>Connections
                                     </a> --}}
                                 @endif
-                                <div class="border-t border-gray-100 my-1 bg-white"></div>
+                                <div class="border-t border-gray-100 my-1"></div>
                                 <form method="POST" action="{{ route('logout') }}">
                                     @csrf
-                                    <button type="submit" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 bg-white" style="color: #374151;">
-                                        <i class="fas fa-sign-out-alt mr-2 text-stu-red"></i>Logout
+                                    <button type="submit" class="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100" style="color: #DC2626 !important;">
+                                        <i class="fas fa-sign-out-alt mr-2" style="color: #DC2626;"></i>Logout
                                     </button>
                                 </form>
                             </div>
