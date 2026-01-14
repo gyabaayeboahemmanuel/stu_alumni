@@ -111,13 +111,24 @@ class AlumniDashboardController extends Controller
             'linkedin' => 'nullable|url|max:200',
             'twitter' => 'nullable|url|max:200',
             'facebook' => 'nullable|url|max:200',
-            'is_visible_in_directory' => 'boolean',
+            'is_visible_in_directory' => 'nullable|boolean',
             'chapter_id' => 'nullable|exists:chapters,id',
         ]);
 
-        $alumni->update($validated);
+        // Handle checkbox - if not present, set to false
+        $validated['is_visible_in_directory'] = $request->has('is_visible_in_directory') ? (bool) $request->input('is_visible_in_directory') : false;
 
-        return redirect()->back()->with('success', 'Profile updated successfully!');
+        try {
+            $alumni->update($validated);
+            return redirect()->back()->with('success', 'Profile updated successfully!');
+        } catch (\Exception $e) {
+            \Log::error('Profile update failed', [
+                'alumni_id' => $alumni->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return redirect()->back()->with('error', 'Failed to update profile. Please try again.');
+        }
     }
 
     public function updateProfilePhoto(Request $request)

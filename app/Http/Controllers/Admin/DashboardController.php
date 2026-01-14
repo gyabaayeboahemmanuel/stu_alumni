@@ -7,6 +7,7 @@ use App\Models\Announcement;
 use App\Models\Event;
 use App\Models\Business;
 use App\Models\User;
+use App\Models\Donation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -37,7 +38,16 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
-        return view('admin.dashboard', compact('stats', 'pendingAlumni', 'recentAnnouncements'));
+        // Recent in-kind donations
+        $recentDonations = Donation::inKind()
+            ->with(['user', 'alumni'])
+            ->latest()
+            ->take(5)
+            ->get();
+
+        $pendingDonationsCount = Donation::inKind()->pending()->count();
+
+        return view('admin.dashboard', compact('stats', 'pendingAlumni', 'recentAnnouncements', 'recentDonations', 'pendingDonationsCount'));
     }
 
     public function alumniStats()

@@ -136,6 +136,68 @@
         </div>
     </div>
 
+    <!-- In-Kind Donations Section -->
+    <div class="mt-8 card p-6">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900">In-Kind Donations</h2>
+                @if(isset($pendingDonationsCount) && $pendingDonationsCount > 0)
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 mt-1">
+                        {{ $pendingDonationsCount }} Pending
+                    </span>
+                @endif
+            </div>
+            <a href="{{ route('admin.donations.index') }}" class="text-sm text-blue-600 hover:text-blue-500">
+                View All
+            </a>
+        </div>
+        <div class="space-y-4">
+            @forelse($recentDonations ?? [] as $donation)
+                <div class="border-l-4 border-green-500 pl-4 py-3 bg-gray-50 rounded-lg">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-2 mb-2">
+                                <h3 class="font-medium text-gray-900">
+                                    @if($donation->alumni)
+                                        {{ $donation->alumni->full_name }}
+                                    @elseif($donation->user)
+                                        {{ $donation->user->name }}
+                                    @else
+                                        Anonymous
+                                    @endif
+                                </h3>
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+                                    {{ $donation->status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
+                                       ($donation->status === 'approved' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800') }}">
+                                    {{ ucfirst($donation->status) }}
+                                </span>
+                            </div>
+                            <p class="text-sm text-gray-600 mb-2">
+                                <strong>Items:</strong> {{ \Illuminate\Support\Str::limit($donation->items, 80) }}
+                            </p>
+                            <p class="text-sm text-gray-600 mb-1">
+                                <strong>Location:</strong> {{ $donation->city }}, {{ $donation->country }}
+                            </p>
+                            <p class="text-sm text-gray-600">
+                                <strong>Contact:</strong> {{ $donation->contact }}
+                            </p>
+                            <p class="text-xs text-gray-500 mt-2">
+                                <i class="fas fa-calendar mr-1"></i>
+                                {{ $donation->created_at->format('M j, Y g:i A') }}
+                            </p>
+                        </div>
+                        <a href="{{ route('admin.donations.show', $donation) }}" 
+                           class="ml-4 text-blue-600 hover:text-blue-900" title="View Details">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                    </div>
+                </div>
+            @empty
+                <p class="text-gray-500 text-center py-4">No in-kind donations yet.</p>
+            @endforelse
+        </div>
+    </div>
+
     <!-- Quick Actions -->
     <div class="mt-8 card p-6">
         <h2 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>

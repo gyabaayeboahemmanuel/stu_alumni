@@ -387,6 +387,12 @@
                             <a href="{{ url('/') }}" class="px-3 py-2 rounded-md text-sm font-medium transition duration-200 {{ request()->is('/') ? 'nav-active' : 'nav-hover' }}">
                                 <i class="fas fa-home mr-1"></i>Home
                             </a>
+                            <a href="{{ route('about') }}" class="px-3 py-2 rounded-md text-sm font-medium transition duration-200 {{ request()->routeIs('about') ? 'nav-active' : 'nav-hover' }}">
+                                <i class="fas fa-info-circle mr-1"></i>About
+                            </a>
+                            <a href="{{ route('executives') }}" class="px-3 py-2 rounded-md text-sm font-medium transition duration-200 {{ request()->routeIs('executives') ? 'nav-active' : 'nav-hover' }}">
+                                <i class="fas fa-users-cog mr-1"></i>Executives
+                            </a>
                             <a href="{{ route('businesses.public.index') }}" class="px-3 py-2 rounded-md text-sm font-medium transition duration-200 {{ request()->routeIs('businesses.public.*') ? 'nav-active' : 'nav-hover' }}">
                                 <i class="fas fa-briefcase mr-1"></i>Business Directory
                             </a>
@@ -395,10 +401,13 @@
 
                     <!-- Auth Links -->
                     <div class="flex items-center space-x-2">
+                        <a href="{{ route('donations.create') }}" class="px-4 py-2 rounded-md text-sm font-medium transition duration-200 bg-stu-red hover:bg-stu-red-light text-white">
+                            <i class="fas fa-heart mr-1"></i>Donate
+                        </a>
                         <a href="{{ route('login') }}" class="px-4 py-2 rounded-md text-sm font-medium transition duration-200 hover:bg-stu-green-light">
                             <i class="fas fa-sign-in-alt mr-1"></i>Login
                         </a>
-                        <a href="{{ route('register') }}" class="px-4 py-2 rounded-md text-sm font-medium transition duration-200 bg-stu-red hover:bg-stu-red-light">
+                        <a href="{{ route('register') }}" class="px-4 py-2 rounded-md text-sm font-medium transition duration-200 bg-stu-green hover:bg-stu-green-light">
                             <i class="fas fa-user-plus mr-1"></i>Register
                         </a>
                     </div>

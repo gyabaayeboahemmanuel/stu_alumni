@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\SettingsController as AdminSettingsController;
 use App\Http\Controllers\Admin\YearGroupController as AdminYearGroupController;
 use App\Http\Controllers\Admin\ChapterController as AdminChapterController;
 use App\Http\Controllers\Admin\BroadcastController as AdminBroadcastController;
+use App\Http\Controllers\DonationController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -52,6 +53,24 @@ Route::middleware('guest')->group(function () {
 // Public Business Directory
 Route::get('/businesses', [BusinessController::class, 'index'])->name('businesses.public.index');
 Route::get('/businesses/{slug}', [BusinessController::class, 'show'])->name('businesses.public.show');
+
+// Donations
+Route::get('/donate', [DonationController::class, 'create'])->name('donations.create');
+Route::post('/donate', [DonationController::class, 'store'])->name('donations.store');
+
+// Public Pages
+Route::get('/about', function () {
+    return view('about');
+})->name('about');
+
+Route::get('/executives', function () {
+    $executives = \App\Models\Executive::current()
+        ->with('alumni.user')
+        ->ordered()
+        ->get();
+    
+    return view('executives', compact('executives'));
+})->name('executives');
 
 // Alumni Authenticated Routes
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -158,6 +177,13 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     // Broadcast Messages
     Route::get('/broadcast', [AdminBroadcastController::class, 'index'])->name('broadcast.index');
     Route::post('/broadcast/send', [AdminBroadcastController::class, 'send'])->name('broadcast.send');
+    
+    // Donations Management
+    Route::prefix('donations')->name('donations.')->group(function () {
+        Route::get('/', [DonationController::class, 'index'])->name('index');
+        Route::get('/{donation}', [DonationController::class, 'show'])->name('show');
+        Route::patch('/{donation}/status', [DonationController::class, 'updateStatus'])->name('update-status');
+    });
 });
 
 // Fallback Route

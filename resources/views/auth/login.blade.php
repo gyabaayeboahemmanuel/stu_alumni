@@ -85,6 +85,33 @@
                 </div>
             </form>
 
+            @push('scripts')
+            <script>
+                // Ensure CSRF token is properly set for form submission
+                document.addEventListener('DOMContentLoaded', function() {
+                    const form = document.querySelector('form[action="{{ route('login.process') }}"]');
+                    const csrfInput = form.querySelector('input[name="_token"]');
+                    const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+                    
+                    // Update form token from meta tag if available
+                    if (csrfMeta && csrfInput) {
+                        csrfInput.value = csrfMeta.getAttribute('content');
+                    }
+                    
+                    // Refresh CSRF token before form submission if page has been open for a while
+                    form.addEventListener('submit', function(e) {
+                        // Check if token exists and is valid
+                        if (!csrfInput || !csrfInput.value) {
+                            // Reload page to get fresh token
+                            e.preventDefault();
+                            window.location.reload();
+                            return false;
+                        }
+                    });
+                });
+            </script>
+            @endpush
+
             <div class="mt-8">
                 <div class="relative">
                     <div class="absolute inset-0 flex items-center">
