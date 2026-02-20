@@ -94,12 +94,33 @@
                                     </div>
                                 </label>
                                 <div id="custom_emails" class="ml-7 hidden">
-                                    <textarea name="custom_emails" rows="3" class="form-textarea" 
-                                              placeholder="email1@example.com, email2@example.com">{{ old('custom_emails') }}</textarea>
-                                    <p class="text-xs text-gray-500 mt-1">Separate emails with commas</p>
-                                    @error('custom_emails')
-                                        <p class="form-error">{{ $message }}</p>
-                                    @enderror
+                                    <!-- Search Users -->
+                                    <div class="mb-4">
+                                        <label class="form-label">Search Users</label>
+                                        <div class="relative">
+                                            <input type="text" 
+                                                   id="user_search" 
+                                                   class="form-input" 
+                                                   placeholder="Search by ID, phone, or name..."
+                                                   autocomplete="off">
+                                            <div id="search_results" class="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg hidden max-h-60 overflow-y-auto"></div>
+                                        </div>
+                                        <p class="text-xs text-gray-500 mt-1">Type to search for users by student ID, phone number, or name</p>
+                                    </div>
+
+                                    <!-- Selected Users List -->
+                                    <div id="selected_users" class="mb-4 space-y-2"></div>
+
+                                    <!-- Email Input -->
+                                    <div>
+                                        <label class="form-label">Or Enter Email Addresses</label>
+                                        <textarea name="custom_emails" id="custom_emails_input" rows="3" class="form-textarea" 
+                                                  placeholder="email1@example.com, email2@example.com">{{ old('custom_emails') }}</textarea>
+                                        <p class="text-xs text-gray-500 mt-1">Separate emails with commas, or use the search above to add users</p>
+                                        @error('custom_emails')
+                                            <p class="form-error">{{ $message }}</p>
+                                        @enderror
+                                    </div>
                                 </div>
                             </div>
                             @error('recipient_type')
@@ -345,6 +366,140 @@ document.addEventListener('DOMContentLoaded', function() {
     const checked = document.querySelector('input[name="recipient_type"]:checked');
     if (checked) {
         toggleRecipientFields();
+    }
+
+    // User search functionality
+    let searchTimeout;
+    const userSearchInput = document.getElementById('user_search');
+    const searchResults = document.getElementById('search_results');
+    const selectedUsers = document.getElementById('selected_users');
+    const customEmailsInput = document.getElementById('custom_emails_input');
+    let selectedUsersList = [];
+
+    if (userSearchInput) {
+        userSearchInput.addEventListener('input', function() {
+            const query = this.value.trim();
+            
+            clearTimeout(searchTimeout);
+            
+            if (query.length < 2) {
+                searchResults.classList.add('hidden');
+                return;
+            }
+
+            searchTimeout = setTimeout(() => {
+                fetch(`{{ route('admin.broadcast.search-users') }}?q=${encodeURIComponent(query)}`, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.length === 0) {
+                        searchResults.innerHTML = '<div class="p-3 text-sm text-gray-500">No users found</div>';
+                        searchResults.classList.remove('hidden');
+                        return;
+                    }
+
+                    searchResults.innerHTML = data.map(user => {
+                        const isSelected = selectedUsersList.some(u => u.id === user.id);
+                        const escapedName = user.name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                        const escapedEmail = user.email.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                        return `
+                            <div class="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 ${isSelected ? 'bg-green-50' : ''}" 
+                                 data-user-id="${user.id}"
+                                 data-user-email="${escapedEmail}"
+                                 data-user-name="${escapedName}"
+                                 onclick="addUserToList(${user.id}, '${escapedEmail}', '${escapedName}')">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <div class="font-medium text-gray-900">${user.name}</div>
+                                        <div class="text-xs text-gray-500">${user.student_id ? 'ID: ' + user.student_id + ' • ' : ''}${user.email}${user.phone ? ' • ' + user.phone : ''}</div>
+                                    </div>
+                                    ${isSelected ? '<i class="fas fa-check-circle text-green-600"></i>' : '<i class="fas fa-plus text-gray-400"></i>'}
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                    searchResults.classList.remove('hidden');
+                })
+                .catch(error => {
+                    console.error('Search error:', error);
+                });
+            }, 300);
+        });
+
+        // Hide search results when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!userSearchInput.contains(e.target) && !searchResults.contains(e.target)) {
+                searchResults.classList.add('hidden');
+            }
+        });
+    }
+
+    // Add user to list
+    window.addUserToList = function(userId, email, name) {
+        // Check if already added
+        if (selectedUsersList.some(u => u.id === userId)) {
+            return;
+        }
+
+        selectedUsersList.push({ id: userId, email: email, name: name });
+        updateSelectedUsersDisplay();
+        updateCustomEmailsInput();
+        
+        // Clear search
+        userSearchInput.value = '';
+        searchResults.classList.add('hidden');
+    };
+
+    // Remove user from list
+    window.removeUserFromList = function(userId) {
+        selectedUsersList = selectedUsersList.filter(u => u.id !== userId);
+        updateSelectedUsersDisplay();
+        updateCustomEmailsInput();
+    };
+
+    // Update selected users display
+    function updateSelectedUsersDisplay() {
+        if (selectedUsersList.length === 0) {
+            selectedUsers.innerHTML = '';
+            return;
+        }
+
+        selectedUsers.innerHTML = '<div class="text-sm font-medium text-gray-700 mb-2">Selected Users (' + selectedUsersList.length + '):</div>' +
+            selectedUsersList.map(user => `
+                <div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg border border-gray-200">
+                    <div class="flex-1">
+                        <div class="text-sm font-medium text-gray-900">${user.name}</div>
+                        <div class="text-xs text-gray-500">${user.email}</div>
+                    </div>
+                    <button type="button" 
+                            onclick="removeUserFromList(${user.id})"
+                            class="ml-2 text-red-600 hover:text-red-800">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `).join('');
+    }
+
+    // Update custom emails input
+    function updateCustomEmailsInput() {
+        // Get user IDs and emails from selected users
+        const userIds = selectedUsersList.map(u => u.id.toString());
+        const emails = selectedUsersList.map(u => u.email);
+        
+        // Get existing values from textarea (split by comma)
+        const existingValues = customEmailsInput.value.split(',').map(e => e.trim()).filter(e => e);
+        
+        // Separate existing emails and IDs
+        const existingEmails = existingValues.filter(e => !e.match(/^\d+$/));
+        const existingIds = existingValues.filter(e => e.match(/^\d+$/));
+        
+        // Combine all (user IDs + emails from selected users + manually entered emails)
+        const allValues = [...new Set([...userIds, ...emails, ...existingEmails])];
+        customEmailsInput.value = allValues.join(', ');
     }
 });
 </script>

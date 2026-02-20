@@ -176,6 +176,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     
     // Broadcast Messages
     Route::get('/broadcast', [AdminBroadcastController::class, 'index'])->name('broadcast.index');
+    Route::get('/broadcast/search-users', [AdminBroadcastController::class, 'searchUsers'])->name('broadcast.search-users');
     Route::post('/broadcast/send', [AdminBroadcastController::class, 'send'])->name('broadcast.send');
     
     // Donations Management

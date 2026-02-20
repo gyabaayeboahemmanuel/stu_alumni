@@ -46,6 +46,43 @@ class BroadcastController extends Controller
     }
 
     /**
+     * Search users for custom list
+     */
+    public function searchUsers(Request $request)
+    {
+        $query = $request->get('q', '');
+        
+        if (strlen($query) < 2) {
+            return response()->json([]);
+        }
+
+        $alumni = Alumni::with('user')
+            ->where(function($q) use ($query) {
+                $q->where('student_id', 'LIKE', "%{$query}%")
+                  ->orWhere('first_name', 'LIKE', "%{$query}%")
+                  ->orWhere('last_name', 'LIKE', "%{$query}%")
+                  ->orWhere('phone', 'LIKE', "%{$query}%")
+                  ->orWhereHas('user', function($userQuery) use ($query) {
+                      $userQuery->where('email', 'LIKE', "%{$query}%");
+                  });
+            })
+            ->verified()
+            ->limit(20)
+            ->get();
+
+        return response()->json($alumni->map(function($alumnus) {
+            return [
+                'id' => $alumnus->id,
+                'student_id' => $alumnus->student_id,
+                'name' => $alumnus->full_name,
+                'email' => $alumnus->user->email ?? $alumnus->email,
+                'phone' => $alumnus->phone,
+                'display' => $alumnus->full_name . ($alumnus->student_id ? ' (' . $alumnus->student_id . ')' : '') . ($alumnus->user->email ? ' - ' . $alumnus->user->email : ''),
+            ];
+        }));
+    }
+
+    /**
      * Send broadcast message
      */
     public function send(Request $request)
@@ -180,10 +217,30 @@ class BroadcastController extends Controller
                 break;
 
             case 'custom':
-                // Custom email list
-                $emails = array_filter(array_map('trim', explode(',', $request->custom_emails)));
-                $query->whereHas('user', function ($q) use ($emails) {
-                    $q->whereIn('email', $emails);
+                // Custom email list - can contain emails or user IDs
+                $customInput = array_filter(array_map('trim', explode(',', $request->custom_emails)));
+                $emails = [];
+                $userIds = [];
+                
+                foreach ($customInput as $item) {
+                    if (is_numeric($item)) {
+                        // If it's a number, treat as user ID
+                        $userIds[] = $item;
+                    } else {
+                        // Otherwise treat as email
+                        $emails[] = $item;
+                    }
+                }
+                
+                $query->where(function($q) use ($emails, $userIds) {
+                    if (!empty($emails)) {
+                        $q->whereHas('user', function ($userQuery) use ($emails) {
+                            $userQuery->whereIn('email', $emails);
+                        });
+                    }
+                    if (!empty($userIds)) {
+                        $q->orWhereIn('id', $userIds);
+                    }
                 })->where('verification_status', 'verified');
                 break;
         }

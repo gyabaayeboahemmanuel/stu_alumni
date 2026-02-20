@@ -60,18 +60,12 @@
                 </div>
 
                 <!-- Action buttons -->
-                <div class="mt-8 flex flex-col sm:flex-row gap-3 sm:justify-center">
+                <div class="mt-8 flex justify-center">
                     <a href="{{ route('alumni.profile') }}" 
                        class="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-xl text-white bg-gradient-to-r from-stu-green to-stu-green-dark hover:from-stu-green-dark hover:to-stu-green shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
                         <i class="fas fa-arrow-right mr-2"></i>
-                        Update Now
+                        Update Profile
                     </a>
-                    <button type="button" 
-                            id="dismissModal"
-                            class="inline-flex items-center justify-center px-6 py-3 border-2 border-gray-300 text-base font-medium rounded-xl text-gray-700 bg-white hover:bg-gray-50 transition-all duration-200">
-                        <i class="fas fa-times mr-2"></i>
-                        Maybe Later
-                    </button>
                 </div>
             </div>
         </div>
@@ -83,7 +77,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const modal = document.getElementById('profileReminderModal');
     const overlay = document.getElementById('modalOverlay');
     const modalContent = document.getElementById('modalContent');
-    const dismissBtn = document.getElementById('dismissModal');
     
     @if(isset($showProfileReminder) && $showProfileReminder)
         // Show modal with animation
@@ -96,37 +89,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 10);
         }, 500); // Small delay for better UX
     @endif
-
-    function hideModal() {
-        modalContent.style.opacity = '0';
-        modalContent.style.transform = 'scale(0.95) translateY(-20px)';
-        overlay.style.opacity = '0';
-        
-        setTimeout(() => {
-            modal.classList.add('hidden');
-            // Mark as dismissed in session
-            const form = document.createElement('form');
-            form.method = 'GET';
-            form.action = '{{ route("alumni.dashboard") }}';
-            const input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = 'dismiss_profile_reminder';
-            input.value = '1';
-            form.appendChild(input);
-            document.body.appendChild(form);
-            form.submit();
-        }, 200);
-    }
-
-    dismissBtn.addEventListener('click', hideModal);
-    overlay.addEventListener('click', hideModal);
-
-    // Close on Escape key
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
-            hideModal();
-        }
-    });
 });
 </script>
 
