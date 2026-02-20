@@ -17,7 +17,7 @@ NC='\033[0m' # No Color
 
 # Configuration
 APP_DIR="/home/gekymedia/web/stualumni.gekymedia.com/public_html"
-BRANCH="main"                 # Change this to your production branch
+BRANCH="master"               # Change this to your production branch
 
 echo -e "${BLUE}========================================${NC}"
 echo -e "${BLUE}   STUALUMNI DEPLOYMENT SCRIPT${NC}"
