@@ -12,7 +12,7 @@ class AlumniManagementController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Alumni::with('user');
+        $query = Alumni::with(['user', 'chapter']);
 
         // Search filter
         if ($request->has('search') && $request->search) {
@@ -30,9 +30,22 @@ class AlumniManagementController extends Controller
             $query->where('verification_status', $request->verification_status);
         }
 
-        // Year filter
+        // Year filter (single year)
         if ($request->has('year') && $request->year) {
             $query->where('year_of_completion', $request->year);
+        }
+
+        // Year range filter (for year group "View members")
+        if ($request->has('year_from') && $request->year_from) {
+            $query->where('year_of_completion', '>=', $request->year_from);
+        }
+        if ($request->has('year_to') && $request->year_to) {
+            $query->where('year_of_completion', '<=', $request->year_to);
+        }
+
+        // Chapter filter (for chapter "View alumni")
+        if ($request->has('chapter_id') && $request->chapter_id) {
+            $query->where('chapter_id', $request->chapter_id);
         }
 
         $alumni = $query->latest()->paginate(20);

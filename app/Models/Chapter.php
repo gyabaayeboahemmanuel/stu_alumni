@@ -21,6 +21,8 @@ class Chapter extends Model
         'contact_phone',
         'meeting_location',
         'whatsapp_link',
+        'telegram_link',
+        'gekychat_link',
         'is_active',
         'is_approved',
     ];
@@ -77,6 +79,16 @@ class Chapter extends Model
     {
         $parts = array_filter([$this->city, $this->region, $this->country]);
         return implode(', ', $parts);
+    }
+
+    /**
+     * Check if has any social/group links
+     */
+    public function hasSocialLinks()
+    {
+        return !empty($this->whatsapp_link) ||
+               !empty($this->telegram_link) ||
+               !empty($this->gekychat_link);
     }
 
     /**

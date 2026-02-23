@@ -149,6 +149,22 @@ class ReportsController extends Controller
         return view('admin.reports.business', compact('businesses', 'industries'));
     }
 
+    public function businessShow(Business $business)
+    {
+        $business->load('alumni.user');
+        return view('admin.reports.business-show', compact('business'));
+    }
+
+    public function businessApprove(Business $business)
+    {
+        $business->update([
+            'status' => Business::STATUS_ACTIVE,
+            'is_verified' => true,
+            'verified_at' => now(),
+        ]);
+        return redirect()->back()->with('success', 'Business listing approved. It is now visible in the public directory.');
+    }
+
     public function eventsReport(Request $request)
     {
         $query = Event::withCount('registrations');

@@ -198,6 +198,36 @@
                                     <p class="form-error">{{ $message }}</p>
                                 @enderror
                             </div>
+
+                            <div>
+                                <label for="telegram_link" class="form-label">
+                                    Telegram Group Link <span class="text-gray-500 text-sm font-normal">(Optional)</span>
+                                </label>
+                                <input type="url" 
+                                       id="telegram_link" 
+                                       name="telegram_link" 
+                                       value="{{ old('telegram_link', $chapter->telegram_link) }}"
+                                       class="form-input @error('telegram_link') border-red-500 @enderror"
+                                       placeholder="https://t.me/...">
+                                @error('telegram_link')
+                                    <p class="form-error">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div>
+                                <label for="gekychat_link" class="form-label">
+                                    GekyChat Group Link <span class="text-gray-500 text-sm font-normal">(Optional)</span>
+                                </label>
+                                <input type="url" 
+                                       id="gekychat_link" 
+                                       name="gekychat_link" 
+                                       value="{{ old('gekychat_link', $chapter->gekychat_link) }}"
+                                       class="form-input @error('gekychat_link') border-red-500 @enderror"
+                                       placeholder="https://...">
+                                @error('gekychat_link')
+                                    <p class="form-error">{{ $message }}</p>
+                                @enderror
+                            </div>
                         </div>
                     </div>
 

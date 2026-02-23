@@ -48,6 +48,8 @@ class ChapterController extends Controller
             'contact_phone' => 'nullable|string|max:20',
             'meeting_location' => 'nullable|string|max:500',
             'whatsapp_link' => 'nullable|url|max:500',
+            'telegram_link' => 'nullable|url|max:500',
+            'gekychat_link' => 'nullable|url|max:500',
             'is_active' => 'boolean',
         ]);
 
@@ -68,6 +70,8 @@ class ChapterController extends Controller
                 'contact_phone' => $request->contact_phone,
                 'meeting_location' => $request->meeting_location,
                 'whatsapp_link' => $request->whatsapp_link,
+                'telegram_link' => $request->telegram_link,
+                'gekychat_link' => $request->gekychat_link,
                 'is_active' => $request->boolean('is_active', true),
                 'is_approved' => true, // Admin-created chapters are auto-approved
             ]);
@@ -109,6 +113,8 @@ class ChapterController extends Controller
             'contact_phone' => 'nullable|string|max:20',
             'meeting_location' => 'nullable|string|max:500',
             'whatsapp_link' => 'nullable|url|max:500',
+            'telegram_link' => 'nullable|url|max:500',
+            'gekychat_link' => 'nullable|url|max:500',
             'is_active' => 'boolean',
             'is_approved' => 'boolean',
         ]);
@@ -131,6 +137,8 @@ class ChapterController extends Controller
                 'contact_phone' => $request->contact_phone,
                 'meeting_location' => $request->meeting_location,
                 'whatsapp_link' => $request->whatsapp_link,
+                'telegram_link' => $request->telegram_link,
+                'gekychat_link' => $request->gekychat_link,
                 'is_active' => $request->boolean('is_active', true),
                 'is_approved' => $request->boolean('is_approved', true),
             ]);

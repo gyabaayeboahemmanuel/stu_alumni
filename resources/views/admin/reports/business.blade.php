@@ -24,6 +24,7 @@
                 <label for="status" class="form-label">Status</label>
                 <select id="status" name="status" class="form-input">
                     <option value="">All Statuses</option>
+                    <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
                     <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
                     <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
                 </select>
@@ -86,7 +87,11 @@
                             <div class="text-sm font-medium text-gray-900">{{ $business->name }}</div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {{ $business->alumni->first_name }} {{ $business->alumni->last_name }}
+                            @if($business->alumni)
+                                {{ $business->alumni->first_name }} {{ $business->alumni->last_name }}
+                            @else
+                                <span class="text-gray-400">—</span>
+                            @endif
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             {{ $business->industry ?? 'N/A' }}
@@ -102,15 +107,25 @@
                                 @if($business->is_featured)
                                     <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">Featured</span>
                                 @endif
-                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{ $business->status == 'active' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800' }}">
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{ $business->status == 'active' ? 'bg-blue-100 text-blue-800' : ($business->status == 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800') }}">
                                     {{ ucfirst($business->status) }}
                                 </span>
                             </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <a href="{{ route('businesses.public.show', $business->slug) }}" target="_blank" class="text-blue-600 hover:text-blue-900">
-                                View
-                            </a>
+                            <div class="flex items-center justify-end gap-2">
+                                <a href="{{ route('admin.reports.businesses.show', $business) }}" class="text-blue-600 hover:text-blue-900">
+                                    View
+                                </a>
+                                @if($business->status === 'pending')
+                                    <form action="{{ route('admin.reports.businesses.approve', $business) }}" method="POST" class="inline">
+                                        @csrf
+                                        <button type="submit" class="text-green-600 hover:text-green-900">
+                                            Approve
+                                        </button>
+                                    </form>
+                                @endif
+                            </div>
                         </td>
                     </tr>
                     @empty

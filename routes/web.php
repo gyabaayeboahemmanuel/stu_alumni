@@ -154,6 +154,8 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
         Route::get('/', [AdminReportsController::class, 'index'])->name('index');
         Route::get('/alumni', [AdminReportsController::class, 'alumniReport'])->name('alumni');
         Route::get('/businesses', [AdminReportsController::class, 'businessReport'])->name('businesses');
+        Route::get('/businesses/{business}', [AdminReportsController::class, 'businessShow'])->name('businesses.show');
+        Route::post('/businesses/{business}/approve', [AdminReportsController::class, 'businessApprove'])->name('businesses.approve');
         Route::get('/events', [AdminReportsController::class, 'eventsReport'])->name('events');
         Route::get('/export-alumni', [AdminReportsController::class, 'exportAlumni'])->name('export-alumni');
         Route::get('/system-stats', [AdminReportsController::class, 'systemStats'])->name('system-stats');

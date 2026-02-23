@@ -29,6 +29,9 @@
                                 Year Range
                             </th>
                             <th class="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">
+                                Members
+                            </th>
+                            <th class="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">
                                 Social Links
                             </th>
                             <th class="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">
@@ -61,6 +64,15 @@
                                     </div>
                                     <div class="text-xs text-gray-500">
                                         {{ $group->end_year - $group->start_year + 1 }} years span
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex flex-col">
+                                        <div class="text-sm font-medium text-gray-900">{{ $group->members_count ?? 0 }} members</div>
+                                        <a href="{{ route('admin.alumni.index', ['year_from' => $group->start_year, 'year_to' => $group->end_year]) }}" 
+                                           class="text-sm text-stu-green hover:text-stu-green-dark mt-1">
+                                            View members
+                                        </a>
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
@@ -129,7 +141,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="px-6 py-12 text-center text-gray-500">
+                                <td colspan="6" class="px-6 py-12 text-center text-gray-500">
                                     <i class="fas fa-inbox text-4xl mb-4 text-gray-300"></i>
                                     <p>No year groups found.</p>
                                     <a href="{{ route('admin.year-groups.create') }}" class="text-stu-green hover:text-stu-green-dark mt-2 inline-block">

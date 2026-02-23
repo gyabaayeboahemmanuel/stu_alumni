@@ -14,7 +14,10 @@ class YearGroupController extends Controller
      */
     public function index()
     {
-        $yearGroups = YearGroup::orderBy('start_year', 'desc')->paginate(15);
+        $yearGroups = YearGroup::query()
+            ->selectRaw('year_groups.*, (SELECT COUNT(*) FROM alumni WHERE alumni.year_of_completion >= year_groups.start_year AND alumni.year_of_completion <= year_groups.end_year AND alumni.deleted_at IS NULL) as members_count')
+            ->orderBy('start_year', 'desc')
+            ->paginate(15);
         return view('admin.year-groups.index', compact('yearGroups'));
     }
 

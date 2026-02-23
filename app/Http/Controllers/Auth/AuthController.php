@@ -424,10 +424,14 @@ class AuthController extends Controller
         }
     }
 
-    // Show login form
+    // Show login form (no-cache so CSRF token is always fresh and 419 is avoided)
     public function showLoginForm()
     {
-        return view('auth.login');
+        return response()
+            ->view('auth.login')
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', '0');
     }
 
     // Process login (AJAX compatible)

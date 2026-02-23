@@ -3,7 +3,7 @@
 @section('title', 'Alumni Management')
 
 @section('content')
-<div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+<div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8 overflow-x-hidden">
     <!-- Header -->
     <div class="mb-6 flex justify-between items-center">
         <div>
@@ -68,7 +68,7 @@
 
     <!-- Alumni Table -->
     <div class="card overflow-hidden">
-        <div class="overflow-x-auto">
+        <div class="overflow-x-auto max-w-full">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
@@ -80,6 +80,9 @@
                         </th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Programme & Year
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Chapter
                         </th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Contact
@@ -122,6 +125,9 @@
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="text-sm text-gray-900">{{ $alumnus->programme }}</div>
                             <div class="text-sm text-gray-500">{{ $alumnus->year_of_completion }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">{{ $alumnus->chapter?->name ?? '—' }}</div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="text-sm text-gray-900">{{ $alumnus->email }}</div>
@@ -178,7 +184,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500">
+                        <td colspan="8" class="px-6 py-4 text-center text-sm text-gray-500">
                             No alumni found matching your criteria.
                         </td>
                     </tr>

@@ -59,17 +59,19 @@
 
         <!-- Total Businesses -->
         <div class="card p-6">
-            <div class="flex items-center">
-                <div class="flex-shrink-0">
-                    <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                        <i class="fas fa-briefcase text-purple-600"></i>
+            <a href="{{ route('admin.reports.businesses') }}" class="block">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-briefcase text-purple-600"></i>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Business Listings</p>
+                        <p class="text-2xl font-semibold text-gray-900">{{ $stats['total_businesses'] }}</p>
                     </div>
                 </div>
-                <div class="ml-4">
-                    <p class="text-sm font-medium text-gray-600">Business Listings</p>
-                    <p class="text-2xl font-semibold text-gray-900">{{ $stats['total_businesses'] }}</p>
-                </div>
-            </div>
+            </a>
         </div>
     </div>
 

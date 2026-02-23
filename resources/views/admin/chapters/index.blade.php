@@ -41,6 +41,9 @@
                                 Members
                             </th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Group Links
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Status
                             </th>
                             <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -80,9 +83,34 @@
                                     @endif
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center">
-                                        <i class="fas fa-users text-gray-400 mr-2"></i>
+                                    <div class="flex flex-col">
                                         <span class="text-sm font-medium text-gray-900">{{ $chapter->members_count ?? 0 }}</span>
+                                        <a href="{{ route('admin.alumni.index', ['chapter_id' => $chapter->id]) }}" 
+                                           class="text-xs text-stu-green hover:text-stu-green-dark mt-1">
+                                            View alumni
+                                        </a>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex space-x-2 flex-wrap gap-1">
+                                        @if($chapter->whatsapp_link)
+                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                <i class="fab fa-whatsapp mr-1"></i>WhatsApp
+                                            </span>
+                                        @endif
+                                        @if(!empty($chapter->telegram_link))
+                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                <i class="fab fa-telegram mr-1"></i>Telegram
+                                            </span>
+                                        @endif
+                                        @if(!empty($chapter->gekychat_link))
+                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                                <i class="fas fa-comments mr-1"></i>GekyChat
+                                            </span>
+                                        @endif
+                                        @if(!$chapter->hasSocialLinks())
+                                            <span class="text-xs text-gray-400 italic">No links</span>
+                                        @endif
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
@@ -149,7 +177,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="px-6 py-12 text-center text-gray-500">
+                                <td colspan="7" class="px-6 py-12 text-center text-gray-500">
                                     <i class="fas fa-map-marked-alt text-4xl mb-4 text-gray-300"></i>
                                     <p>No chapters found.</p>
                                     <a href="{{ route('admin.chapters.create') }}" class="text-stu-green hover:text-stu-green-dark mt-2 inline-block">

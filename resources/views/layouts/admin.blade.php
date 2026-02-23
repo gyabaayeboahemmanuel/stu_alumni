@@ -258,6 +258,13 @@
                 <span x-show="!sidebarCollapsed" class="ml-3">Reports</span>
             </a>
 
+            <!-- Business Listings -->
+            <a href="{{ route('admin.reports.businesses') }}" 
+               class="sidebar-link flex items-center px-4 py-3 text-gray-700 rounded-lg {{ request()->routeIs('admin.reports.businesses') ? 'active' : '' }}">
+                <i class="fas fa-briefcase w-5"></i>
+                <span x-show="!sidebarCollapsed" class="ml-3">Business Listings</span>
+            </a>
+
             <!-- Year Groups -->
             <a href="{{ route('admin.year-groups.index') }}" 
                class="sidebar-link flex items-center px-4 py-3 text-gray-700 rounded-lg {{ request()->routeIs('admin.year-groups.*') ? 'active' : '' }}">
