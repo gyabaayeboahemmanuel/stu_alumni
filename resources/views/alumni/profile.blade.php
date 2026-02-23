@@ -2,46 +2,6 @@
 
 @section('title', 'My Profile')
 
-@push('styles')
-<!-- Bootstrap CSS -->
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-<style>
-    /* Custom Bootstrap form styling with STU colors */
-    .form-control:focus {
-        border-color: #1B5E20;
-        box-shadow: 0 0 0 0.25rem rgba(27, 94, 32, 0.25);
-    }
-    
-    .form-check-input:checked {
-        background-color: #1B5E20;
-        border-color: #1B5E20;
-    }
-    
-    .form-check-input:focus {
-        border-color: #1B5E20;
-        box-shadow: 0 0 0 0.25rem rgba(27, 94, 32, 0.25);
-    }
-    
-    .btn-primary {
-        background-color: #1B5E20;
-        border-color: #1B5E20;
-    }
-    
-    .btn-primary:hover {
-        background-color: #0D3C11;
-        border-color: #0D3C11;
-    }
-    
-    .form-control {
-        border: 2px solid #9CA3AF;
-    }
-    
-    .form-control:hover:not(:focus) {
-        border-color: #6B7280;
-    }
-</style>
-@endpush
-
 @section('content')
 <div class="max-w-5xl mx-auto py-8 sm:px-6 lg:px-8">
     <!-- Enhanced Header -->
@@ -154,39 +114,39 @@
                                 <div class="w-1 h-8 bg-gradient-to-b from-stu-green to-stu-green-dark rounded-full mr-4"></div>
                                 <h3 class="text-xl font-bold text-gray-900">Personal Information</h3>
                             </div>
-                            <div class="row g-3">
-                                <div class="col-md-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
                                     <label class="form-label">First Name</label>
-                                    <input type="text" value="{{ $alumni->first_name }}" class="form-control-plaintext" readonly>
-                                    <div class="form-text">
-                                        <i class="fas fa-lock me-1"></i> Locked field from SIS
-                                    </div>
+                                    <input type="text" value="{{ $alumni->first_name }}" class="form-input bg-gray-50" readonly>
+                                    <p class="text-sm text-gray-500 mt-1">
+                                        <i class="fas fa-lock mr-1"></i> Locked field from SIS
+                                    </p>
                                 </div>
 
-                                <div class="col-md-6">
+                                <div>
                                     <label class="form-label">Last Name</label>
-                                    <input type="text" value="{{ $alumni->last_name }}" class="form-control-plaintext" readonly>
-                                    <div class="form-text">
-                                        <i class="fas fa-lock me-1"></i> Locked field from SIS
-                                    </div>
+                                    <input type="text" value="{{ $alumni->last_name }}" class="form-input bg-gray-50" readonly>
+                                    <p class="text-sm text-gray-500 mt-1">
+                                        <i class="fas fa-lock mr-1"></i> Locked field from SIS
+                                    </p>
                                 </div>
 
-                                <div class="col-md-6">
+                                <div>
                                     <label class="form-label">Email</label>
-                                    <input type="email" value="{{ $alumni->email }}" class="form-control-plaintext" readonly>
-                                    <div class="form-text">
-                                        <i class="fas fa-lock me-1"></i> Locked field from SIS
-                                    </div>
+                                    <input type="email" value="{{ $alumni->email }}" class="form-input bg-gray-50" readonly>
+                                    <p class="text-sm text-gray-500 mt-1">
+                                        <i class="fas fa-lock mr-1"></i> Locked field from SIS
+                                    </p>
                                 </div>
 
-                                <div class="col-md-6">
+                                <div>
                                     <label for="phone" class="form-label">Phone Number *</label>
                                     <input type="tel" id="phone" name="phone" value="{{ old('phone', $alumni->phone) }}" 
-                                           required class="form-control @error('phone') is-invalid @enderror">
+                                           required class="form-input @error('phone') border-red-500 @enderror">
                                     @error('phone')
-                                        <div class="invalid-feedback">
-                                            <i class="fas fa-exclamation-circle me-1"></i>{{ $message }}
-                                        </div>
+                                        <p class="form-error">
+                                            <i class="fas fa-exclamation-circle mr-1"></i>{{ $message }}
+                                        </p>
                                     @enderror
                                 </div>
                             </div>
@@ -198,28 +158,28 @@
                                 <div class="w-1 h-8 bg-gradient-to-b from-stu-green to-stu-green-dark rounded-full mr-4"></div>
                                 <h3 class="text-xl font-bold text-gray-900">Professional Information</h3>
                             </div>
-                            <div class="row g-3">
-                                <div class="col-md-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
                                     <label for="current_employer" class="form-label">Current Employer</label>
                                     <input type="text" id="current_employer" name="current_employer" 
                                            value="{{ old('current_employer', $alumni->current_employer) }}" 
-                                           class="form-control" 
+                                           class="form-input" 
                                            placeholder="Enter your current employer">
                                 </div>
 
-                                <div class="col-md-6">
+                                <div>
                                     <label for="job_title" class="form-label">Job Title</label>
                                     <input type="text" id="job_title" name="job_title" 
                                            value="{{ old('job_title', $alumni->job_title) }}" 
-                                           class="form-control"
+                                           class="form-input"
                                            placeholder="Enter your job title">
                                 </div>
 
-                                <div class="col-12">
+                                <div class="md:col-span-2">
                                     <label for="industry" class="form-label">Industry</label>
                                     <input type="text" id="industry" name="industry" 
                                            value="{{ old('industry', $alumni->industry) }}" 
-                                           class="form-control"
+                                           class="form-input"
                                            placeholder="Enter your industry">
                                 </div>
                             </div>
@@ -231,27 +191,27 @@
                                 <div class="w-1 h-8 bg-gradient-to-b from-stu-green to-stu-green-dark rounded-full mr-4"></div>
                                 <h3 class="text-xl font-bold text-gray-900">Location Information</h3>
                             </div>
-                            <div class="row g-3">
-                                <div class="col-md-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
                                     <label for="country" class="form-label">Country</label>
                                     <input type="text" id="country" name="country" 
                                            value="{{ old('country', $alumni->country) }}" 
-                                           class="form-control"
+                                           class="form-input"
                                            placeholder="Enter your country">
                                 </div>
 
-                                <div class="col-md-6">
+                                <div>
                                     <label for="city" class="form-label">City</label>
                                     <input type="text" id="city" name="city" 
                                            value="{{ old('city', $alumni->city) }}" 
-                                           class="form-control"
+                                           class="form-input"
                                            placeholder="Enter your city">
                                 </div>
 
-                                <div class="col-12">
+                                <div class="md:col-span-2">
                                     <label for="postal_address" class="form-label">Postal Address</label>
                                     <textarea id="postal_address" name="postal_address" rows="3" 
-                                              class="form-control"
+                                              class="form-textarea"
                                               placeholder="Enter your postal address">{{ old('postal_address', $alumni->postal_address) }}</textarea>
                                 </div>
                             </div>
@@ -263,10 +223,10 @@
                                 <div class="w-1 h-8 bg-gradient-to-b from-stu-green to-stu-green-dark rounded-full mr-4"></div>
                                 <h3 class="text-xl font-bold text-gray-900">Chapter & Year Groups</h3>
                             </div>
-                            <div class="row g-3">
-                                <div class="col-12">
+                            <div class="space-y-4">
+                                <div>
                                     <label for="chapter_id" class="form-label">Chapter</label>
-                                    <select id="chapter_id" name="chapter_id" class="form-control @error('chapter_id') is-invalid @enderror">
+                                    <select id="chapter_id" name="chapter_id" class="form-select @error('chapter_id') border-red-500 @enderror">
                                         <option value="">-- Select a Chapter (Optional) --</option>
                                         @foreach($chapters as $chapter)
                                             <option value="{{ $chapter->id }}" {{ old('chapter_id', $alumni->chapter_id) == $chapter->id ? 'selected' : '' }}>
@@ -278,21 +238,21 @@
                                         @endforeach
                                     </select>
                                     @error('chapter_id')
-                                        <div class="invalid-feedback">
-                                            <i class="fas fa-exclamation-circle me-1"></i>{{ $message }}
-                                        </div>
+                                        <p class="form-error">
+                                            <i class="fas fa-exclamation-circle mr-1"></i>{{ $message }}
+                                        </p>
                                     @enderror
-                                    <div class="form-text">
-                                        <i class="fas fa-info-circle me-1"></i> Join a local chapter to connect with alumni in your area
-                                    </div>
+                                    <p class="text-sm text-gray-500 mt-1">
+                                        <i class="fas fa-info-circle mr-1"></i> Join a local chapter to connect with alumni in your area
+                                    </p>
                                 </div>
 
                                 @if($yearGroups->count() > 0)
-                                <div class="col-12">
+                                <div>
                                     <label class="form-label">Your Year Groups</label>
                                     <div class="bg-gray-50 rounded-xl p-4 border-2 border-gray-200">
                                         <p class="text-sm text-gray-600 mb-3">
-                                            <i class="fas fa-calendar-check me-2 text-stu-green"></i>
+                                            <i class="fas fa-calendar-check mr-2 text-stu-green"></i>
                                             Based on your graduation year ({{ $alumni->year_of_completion }}), you belong to the following year groups:
                                         </p>
                                         <div class="space-y-2">
@@ -341,7 +301,7 @@
                                     </div>
                                 </div>
                                 @else
-                                <div class="col-12">
+                                <div>
                                     <div class="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-4">
                                         <div class="flex items-center">
                                             <i class="fas fa-info-circle text-yellow-600 mr-2"></i>
@@ -362,36 +322,36 @@
                                 <div class="w-1 h-8 bg-gradient-to-b from-stu-green to-stu-green-dark rounded-full mr-4"></div>
                                 <h3 class="text-xl font-bold text-gray-900">Social Links</h3>
                             </div>
-                            <div class="row g-3">
-                                <div class="col-md-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
                                     <label for="website" class="form-label">Website</label>
                                     <input type="url" id="website" name="website" 
                                            value="{{ old('website', $alumni->website) }}" 
-                                           class="form-control" 
+                                           class="form-input" 
                                            placeholder="https://">
                                 </div>
 
-                                <div class="col-md-6">
+                                <div>
                                     <label for="linkedin" class="form-label">LinkedIn</label>
                                     <input type="url" id="linkedin" name="linkedin" 
                                            value="{{ old('linkedin', $alumni->linkedin) }}" 
-                                           class="form-control" 
+                                           class="form-input" 
                                            placeholder="https://linkedin.com/in/username">
                                 </div>
 
-                                <div class="col-md-6">
+                                <div>
                                     <label for="twitter" class="form-label">Twitter</label>
                                     <input type="url" id="twitter" name="twitter" 
                                            value="{{ old('twitter', $alumni->twitter) }}" 
-                                           class="form-control" 
+                                           class="form-input"
                                            placeholder="https://twitter.com/username">
                                 </div>
 
-                                <div class="col-md-6">
+                                <div>
                                     <label for="facebook" class="form-label">Facebook</label>
                                     <input type="url" id="facebook" name="facebook" 
                                            value="{{ old('facebook', $alumni->facebook) }}" 
-                                           class="form-control" 
+                                           class="form-input"
                                            placeholder="https://facebook.com/username">
                                 </div>
                             </div>
@@ -404,27 +364,27 @@
                                 <h3 class="text-xl font-bold text-gray-900">Privacy Settings</h3>
                             </div>
                             <div class="bg-gray-50 rounded-xl p-6 border-2 border-gray-200">
-                                <div class="form-check">
+                                <label class="flex items-start cursor-pointer">
                                     <input type="checkbox" id="is_visible_in_directory" name="is_visible_in_directory" 
                                            value="1" {{ $alumni->is_visible_in_directory ? 'checked' : '' }} 
-                                           class="form-check-input">
-                                    <label for="is_visible_in_directory" class="form-check-label">
-                                        <span class="fw-semibold">Make my profile visible in alumni directory</span>
-                                        <div class="text-muted mt-1">
+                                           class="mt-1 h-4 w-4 rounded border-gray-300 text-stu-green focus:ring-stu-green">
+                                    <span class="ml-3">
+                                        <span class="font-semibold text-gray-900">Make my profile visible in alumni directory</span>
+                                        <p class="text-sm text-gray-500 mt-1">
                                             When enabled, other verified alumni can find you in the directory search.
-                                        </div>
-                                    </label>
-                                </div>
+                                        </p>
+                                    </span>
+                                </label>
                             </div>
                         </div>
                     </div>
 
-                    <div class="mt-4 pt-4 border-top d-flex justify-content-end gap-3">
-                        <a href="{{ route('alumni.dashboard') }}" class="btn btn-secondary">
-                            <i class="fas fa-times me-2"></i>Cancel
+                    <div class="mt-8 pt-6 border-t border-gray-200 flex justify-end gap-3">
+                        <a href="{{ route('alumni.dashboard') }}" class="btn-secondary">
+                            <i class="fas fa-times mr-2"></i>Cancel
                         </a>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save me-2"></i>Update Profile
+                        <button type="submit" class="btn-primary">
+                            <i class="fas fa-save mr-2"></i>Update Profile
                         </button>
                     </div>
                 </form>
@@ -432,9 +392,4 @@
         </div>
     </div>
 </div>
-
-@push('scripts')
-<!-- Bootstrap JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-@endpush
 @endsection
