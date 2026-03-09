@@ -4,6 +4,7 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 const String baseUrl = "https://stu-alumni.com";
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }
 
@@ -32,75 +33,64 @@ class WebViewScreen extends StatefulWidget {
 
 class _WebViewScreenState extends State<WebViewScreen> {
   InAppWebViewController? webViewController;
-  double progress = 0;
-  bool isLoading = true;
+  double progress = 0.0;
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        if (webViewController != null) {
-          if (await webViewController!.canGoBack()) {
-            webViewController!.goBack();
-            return false;
-          }
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        if (webViewController != null &&
+            await webViewController!.canGoBack()) {
+          webViewController!.goBack();
+        } else {
+          if (context.mounted) Navigator.of(context).pop();
         }
-        return true;
       },
       child: Scaffold(
-        body: Stack(
-          children: [
-            InAppWebView(
-              initialUrlRequest: URLRequest(url: WebUri(baseUrl)),
-              initialSettings: InAppWebViewSettings(
-                javaScriptEnabled: true,
-                domStorageEnabled: true,
-                useHybridComposition: true,
-              ),
-              onWebViewCreated: (controller) {
-                webViewController = controller;
-              },
-              onLoadStart: (controller, url) {
-                setState(() {
-                  isLoading = true;
-                });
-              },
-              onLoadStop: (controller, url) async {
-                setState(() {
-                  isLoading = false;
-                });
-              },
-              onProgressChanged: (controller, progress) {
-                setState(() {
-                  this.progress = progress / 100;
-                });
-              },
-              shouldOverrideUrlLoading: (controller, navigationAction) async {
-                final uri = navigationAction.request.url;
-                if (uri != null) {
-                  final host = uri.host;
-                  if (!host.contains('stu-alumni.com')) {
-                    return NavigationActionPolicy.CANCEL;
-                  }
-                }
-                return NavigationActionPolicy.ALLOW;
-              },
-            ),
-            if (isLoading || progress < 1.0)
-              Container(
-                color: Colors.white,
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const CircularProgressIndicator(),
-                      const SizedBox(height: 16),
-                      LinearProgressIndicator(value: progress),
-                    ],
+        body: SafeArea(
+          child: Column(
+            children: [
+              // Thin progress bar at top only while loading - does not block content
+              if (progress < 1.0 && progress > 0.0)
+                LinearProgressIndicator(
+                  value: progress,
+                  backgroundColor: Colors.grey.shade200,
+                ),
+              Expanded(
+                child: InAppWebView(
+                  initialUrlRequest: URLRequest(url: WebUri(baseUrl)),
+                  initialSettings: InAppWebViewSettings(
+                    javaScriptEnabled: true,
+                    domStorageEnabled: true,
+                    useHybridComposition: true,
+                    transparentBackground: false,
                   ),
+                  onWebViewCreated: (controller) {
+                    webViewController = controller;
+                  },
+                  onProgressChanged: (controller, progress) {
+                    setState(() {
+                      this.progress = progress / 100;
+                    });
+                  },
+                  shouldOverrideUrlLoading:
+                      (controller, navigationAction) async {
+                    final uri = navigationAction.request.url;
+                    if (uri != null) {
+                      final host = uri.host;
+                      if (!host.contains('stu-alumni.com') &&
+                          !host.contains('stualumni.gekymedia.com')) {
+                        return NavigationActionPolicy.CANCEL;
+                      }
+                    }
+                    return NavigationActionPolicy.ALLOW;
+                  },
                 ),
               ),
-          ],
+            ],
+          ),
         ),
       ),
     );

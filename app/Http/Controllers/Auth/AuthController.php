@@ -542,11 +542,11 @@ class AuthController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Logged out successfully.',
-                'redirect' => '/'
+                'redirect' => route('login')
             ]);
         }
 
-        return redirect('/');
+        return redirect()->route('login');
     }
 
     // Get registration form partial (for AJAX loading)
