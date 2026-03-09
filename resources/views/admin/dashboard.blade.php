@@ -89,7 +89,7 @@
                     <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                         <div>
                             <h3 class="font-medium text-gray-900">{{ $alumni->full_name }}</h3>
-                            <p class="text-sm text-gray-600">{{ $alumni->programme }} â€¢ {{ $alumni->year_of_completion }}</p>
+                            <p class="text-sm text-gray-600">{{ $alumni->programme }} &bull; {{ $alumni->year_of_completion }}</p>
                             <p class="text-xs text-gray-500 mt-1">Registered: {{ $alumni->created_at->diffForHumans() }}</p>
                         </div>
                         <div class="flex space-x-2">
