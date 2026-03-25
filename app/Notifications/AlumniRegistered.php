@@ -18,7 +18,9 @@ class AlumniRegistered extends Notification implements ShouldQueue
 
     public function via($notifiable)
     {
-        return ['mail', 'database'];
+        // Registration mails are handled via SMS password delivery.
+        // Keep database notification record only.
+        return ['database'];
     }
 
     public function toMail($notifiable)

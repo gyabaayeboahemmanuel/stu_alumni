@@ -12,6 +12,8 @@ use App\Http\Controllers\Admin\SettingsController as AdminSettingsController;
 use App\Http\Controllers\Admin\YearGroupController as AdminYearGroupController;
 use App\Http\Controllers\Admin\ChapterController as AdminChapterController;
 use App\Http\Controllers\Admin\BroadcastController as AdminBroadcastController;
+use App\Http\Controllers\Admin\ImpersonationController;
+use App\Http\Controllers\Admin\PastStudentListController;
 use App\Http\Controllers\DonationController;
 use Illuminate\Support\Facades\Route;
 
@@ -105,6 +107,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 // Admin Routes
 Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function () {
+    // Impersonation (admin -> alumni)
+    Route::post('/impersonate/{user}', [ImpersonationController::class, 'impersonate'])->name('impersonate');
+    Route::post('/impersonate/leave', [ImpersonationController::class, 'leave'])->name('impersonate.leave');
+
+    // Admin can add alumni even while logged in (no guest middleware)
+    Route::get('/alumni/add', [AuthController::class, 'register'])->name('alumni.add');
+
     // Admin Dashboard
     Route::get('/dashboard', [AdminDashboardController::class, 'dashboard'])->name('dashboard');
     Route::get('/stats/alumni', [AdminDashboardController::class, 'alumniStats'])->name('alumni.stats');
@@ -187,6 +196,10 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
         Route::get('/{donation}', [DonationController::class, 'show'])->name('show');
         Route::patch('/{donation}/status', [DonationController::class, 'updateStatus'])->name('update-status');
     });
+
+    // Past Student List (Graduation year -> alumni from university API)
+    Route::get('/past-students', [PastStudentListController::class, 'index'])->name('past-students.index');
+    Route::get('/past-students/fetch', [PastStudentListController::class, 'fetchByAcademicYear'])->name('past-students.fetch');
 });
 
 // Fallback Route

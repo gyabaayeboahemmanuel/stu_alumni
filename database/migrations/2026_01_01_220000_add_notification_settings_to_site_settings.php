@@ -11,6 +11,20 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Defensive: some environments run this migration without the base
+        // `create_site_settings_table` migration, so ensure the table exists.
+        if (!Schema::hasTable('site_settings')) {
+            Schema::create('site_settings', function (Blueprint $table) {
+                $table->id();
+                $table->string('key')->unique();
+                $table->text('value')->nullable();
+                $table->string('type')->default('text'); // text, url, email, phone, textarea, image
+                $table->string('group')->default('general'); // social_media, contact, general
+                $table->text('description')->nullable();
+                $table->timestamps();
+            });
+        }
+
         // Insert notification settings as key-value pairs
         DB::table('site_settings')->insert([
             [

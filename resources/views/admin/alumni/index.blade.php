@@ -160,6 +160,15 @@
                                    class="text-indigo-600 hover:text-indigo-900" title="Edit">
                                     <i class="fas fa-edit"></i>
                                 </a>
+
+                                @if($alumnus->user && !$alumnus->user->isAdmin() && !session(\App\Http\Controllers\Admin\ImpersonationController::IMPERSONATOR_SESSION_KEY))
+                                    <form action="{{ route('admin.impersonate', $alumnus->user) }}" method="POST" class="inline">
+                                        @csrf
+                                        <button type="submit" class="text-blue-600 hover:text-blue-900" title="Impersonate as this alumni">
+                                            <i class="fas fa-user-secret"></i>
+                                        </button>
+                                    </form>
+                                @endif
                                 
                                 @if($alumnus->verification_status === 'pending')
                                 <form action="{{ route('admin.alumni.verify', $alumnus) }}" method="POST" class="inline">

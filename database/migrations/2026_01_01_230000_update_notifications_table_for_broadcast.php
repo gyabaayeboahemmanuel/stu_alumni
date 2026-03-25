@@ -12,6 +12,12 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // SQLite doesn't support MySQL-specific ALTER ... MODIFY COLUMN ... ENUM syntax.
+        // Skip this migration for sqlite-based test runs.
+        if (DB::getDriverName() === 'sqlite') {
+            return;
+        }
+
         // Update type enum to include 'broadcast'
         DB::statement("ALTER TABLE notifications MODIFY COLUMN type ENUM('registration', 'verification', 'event', 'newsletter', 'broadcast') NOT NULL");
         
@@ -25,6 +31,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (DB::getDriverName() === 'sqlite') {
+            return;
+        }
+
         // Revert sent_via back to enum
         DB::statement("ALTER TABLE notifications MODIFY COLUMN sent_via ENUM('email', 'sms') DEFAULT 'email'");
         

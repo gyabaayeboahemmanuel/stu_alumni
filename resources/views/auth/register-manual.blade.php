@@ -132,17 +132,7 @@
                         <input type="password" id="password_confirmation" name="password_confirmation" required class="form-input">
                     </div>
 
-                    <!-- Terms Agreement -->
-                    <div class="md:col-span-2">
-                        <div class="flex items-center">
-                            <input type="checkbox" id="agree_terms" name="agree_terms" required 
-                                   class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                            <label for="agree_terms" class="ml-2 block text-sm text-gray-900">
-                                I agree to the <a href="#" class="text-blue-600 hover:text-blue-500">Terms of Service</a> 
-                                and <a href="#" class="text-blue-600 hover:text-blue-500">Privacy Policy</a>
-                            </label>
-                        </div>
-                    </div>
+                    <!-- Terms Agreement removed (no checkbox required) -->
                 </div>
 
                 <div class="mt-6">

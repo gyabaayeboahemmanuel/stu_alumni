@@ -100,15 +100,6 @@
             </div>
         </div>
 
-        <!-- Terms Agreement -->
-        <div class="flex items-center">
-            <input type="checkbox" id="agree_terms" name="agree_terms" required
-                   class="h-4 w-4 text-stu-green focus:ring-stu-green border-gray-300 rounded">
-            <label for="agree_terms" class="ml-2 block text-sm text-gray-900">
-                I agree to the <a href="#" class="text-stu-green hover:text-stu-green-dark">Terms and Conditions</a> *
-            </label>
-        </div>
-
         <!-- Form Actions -->
         <div class="flex space-x-3">
             <button type="button" id="backToVerification" class="flex-1 btn-secondary">
@@ -150,7 +141,7 @@ document.addEventListener('DOMContentLoaded', function() {
             method: 'POST',
             body: formData,
             headers: {
-                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')) || '',
                 'Accept': 'application/json'
             }
         })

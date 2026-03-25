@@ -211,18 +211,9 @@
                                 <i class="fas fa-key text-green-500 mt-0.5 mr-3"></i>
                                 <div class="text-xs text-green-700 leading-relaxed">
                                     <p class="font-medium tracking-wide">Auto-Generated Password</p>
-                                    <p class="mt-1">A secure password will be sent to your email</p>
+                                    <p class="mt-1">A secure password will be sent to your phone via SMS</p>
                                 </div>
                             </div>
-                        </div>
-
-                        <!-- Terms Agreement -->
-                        <div class="flex items-start">
-                            <input type="checkbox" id="manual_agree_terms" name="agree_terms" required
-                                   class="h-4 w-4 text-stu-green focus:ring-stu-green border-gray-300 rounded mt-0.5 cursor-pointer transition-all duration-200">
-                            <label for="manual_agree_terms" class="ml-2 block text-xs text-gray-700 leading-relaxed tracking-wide">
-                                I agree to the <a href="#" class="text-stu-green hover:text-stu-green-dark font-medium transition-colors">Terms and Conditions</a> *
-                            </label>
                         </div>
 
                         <!-- Form Actions -->
@@ -326,18 +317,9 @@
                                 <i class="fas fa-key text-green-500 mt-0.5 mr-3"></i>
                                 <div class="text-xs text-green-700 leading-relaxed">
                                     <p class="font-medium tracking-wide">Auto-Generated Password</p>
-                                    <p class="mt-1">A secure password will be sent to your email</p>
+                                    <p class="mt-1">A secure password will be sent to your phone via SMS</p>
                                 </div>
                             </div>
-                        </div>
-
-                        <!-- Terms Agreement -->
-                        <div class="flex items-start">
-                            <input type="checkbox" id="agree_terms" name="agree_terms" required
-                                   class="h-4 w-4 text-stu-green focus:ring-stu-green border-gray-300 rounded mt-0.5 cursor-pointer transition-all duration-200">
-                            <label for="agree_terms" class="ml-2 block text-xs text-gray-700 leading-relaxed tracking-wide">
-                                I agree to the <a href="#" class="text-stu-green hover:text-stu-green-dark font-medium transition-colors">Terms and Conditions</a> *
-                            </label>
                         </div>
 
                         <!-- Form Actions -->
@@ -496,7 +478,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const response = await fetch('/verify-sis', {
                 method: 'POST',
                 headers: {
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')) || '',
                     'Accept': 'application/json',
                     'Content-Type': 'application/json'
                 },
@@ -775,7 +757,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 method: 'POST',
                 body: formData,
                 headers: {
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')) || '',
                     'Accept': 'application/json'
                 }
             });

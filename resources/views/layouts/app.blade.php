@@ -371,6 +371,30 @@
         </script>
     @endif
 
+    @if(session(\App\Http\Controllers\Admin\ImpersonationController::IMPERSONATOR_SESSION_KEY))
+        @php
+            $impersonatedName = Auth::user()->name;
+            $impersonatedRole = Auth::user()->role?->name ?? 'User';
+        @endphp
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+            <div class="bg-yellow-50 border border-yellow-200 text-yellow-900 px-4 py-3 rounded-lg flex items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-user-secret"></i>
+                    <div class="text-sm">
+                        You are impersonating <strong>{{ $impersonatedName }}</strong>
+                        <span class="text-yellow-800">({{ $impersonatedRole }})</span>.
+                    </div>
+                </div>
+                <form method="POST" action="{{ route('admin.impersonate.leave') }}">
+                    @csrf
+                    <button type="submit" class="btn-outline border-yellow-500 text-yellow-800 hover:bg-yellow-100">
+                        <i class="fas fa-user-secret mr-2"></i>Leave impersonation
+                    </button>
+                </form>
+            </div>
+        </div>
+    @endif
+
         <!-- Navigation -->
         <nav class="bg-stu-green text-white shadow-lg">
         @guest
@@ -428,6 +452,9 @@
                             <div class="hidden md:ml-6 md:flex md:space-x-1">
                                 <a href="{{ route('admin.dashboard') }}" class="px-3 py-2 rounded-md text-sm font-medium transition duration-200 {{ request()->routeIs('admin.dashboard') ? 'nav-active' : 'nav-hover' }}">
                                     <i class="fas fa-tachometer-alt mr-1"></i>Dashboard
+                                </a>
+                                <a href="{{ route('admin.alumni.add') }}" class="px-3 py-2 rounded-md text-sm font-medium transition duration-200 {{ request()->routeIs('admin.alumni.add') ? 'nav-active' : 'nav-hover' }}">
+                                    <i class="fas fa-user-plus mr-1"></i>Add Alumni
                                 </a>
                                 <a href="{{ route('admin.alumni.index') }}" class="px-3 py-2 rounded-md text-sm font-medium transition duration-200 {{ request()->routeIs('admin.alumni.*') ? 'nav-active' : 'nav-hover' }}">
                                     <i class="fas fa-users mr-1"></i>Alumni

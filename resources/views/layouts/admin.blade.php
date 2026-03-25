@@ -237,6 +237,13 @@
                 <span x-show="!sidebarCollapsed" class="ml-3">Alumni</span>
             </a>
 
+            <!-- Past Student List -->
+            <a href="{{ route('admin.past-students.index') }}"
+               class="sidebar-link flex items-center px-4 py-3 text-gray-700 rounded-lg {{ request()->routeIs('admin.past-students.*') ? 'active' : '' }}">
+                <i class="fas fa-user-graduate w-5"></i>
+                <span x-show="!sidebarCollapsed" class="ml-3">Past Student List</span>
+            </a>
+
             <!-- Announcements -->
             <a href="{{ route('admin.announcements.index') }}" 
                class="sidebar-link flex items-center px-4 py-3 text-gray-700 rounded-lg {{ request()->routeIs('admin.announcements.*') ? 'active' : '' }}">
