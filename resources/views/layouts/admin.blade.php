@@ -354,6 +354,13 @@
 
                 <!-- Right Side Items -->
                 <div class="flex items-center space-x-4">
+                    <!-- Register New Alumni -->
+                    <a href="{{ route('admin.alumni.add') }}"
+                       class="hidden md:inline-flex items-center px-4 py-2 bg-stu-red text-white rounded-lg hover:bg-stu-red-light transition-colors text-sm">
+                        <i class="fas fa-user-plus mr-2"></i>
+                        Register New Alumni
+                    </a>
+
                     <!-- Notifications -->
                     <div class="relative" x-data="{ notifOpen: false }">
                         <button @click="notifOpen = !notifOpen" 
