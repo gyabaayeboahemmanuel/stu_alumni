@@ -26,15 +26,27 @@ self.addEventListener('fetch', (event) => {
   }
 
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request).then((response) => {
-        if (!response || response.status !== 200 || response.type !== 'basic') return response;
+    // Network-first: always try the network so auth-sensitive pages (like `/`)
+    // don't become stale. Only fall back to cache when the network fails.
+    fetch(event.request)
+      .then((response) => {
+        if (!response || response.status !== 200) return response;
+
+        // Cache successful responses for offline fallback.
         const clone = response.clone();
         caches.open(RUNTIME_CACHE).then((cache) => cache.put(event.request, clone));
+
         return response;
-      }).catch(() => event.request.destination === 'document' ? caches.match('/') : null);
-    })
+      })
+      .catch(() => {
+        // If the network fails, return the cached version (if any).
+        return caches.match(event.request).then((cached) => {
+          if (cached) return cached;
+          // Final fallback for document navigations.
+          if (event.request.destination === 'document') return caches.match('/');
+          return null;
+        });
+      })
   );
 });
 
