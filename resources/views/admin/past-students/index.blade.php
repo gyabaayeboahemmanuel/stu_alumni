@@ -119,18 +119,19 @@
                 }
 
                 const rowsHtml = alumni.map(a => {
-                    const name = a.full_name || a.name || (
+                    const name = a.fullname || a.full_name || a.name || (
                         (a.first_name || '') + ' ' + (a.last_name || '')
                     ).trim();
 
-                    const year = a.year_of_completion || a.academic_year || a.graduation_year || '';
+                    const year = a.acyear || a.acc_year || a.year_of_completion || a.academic_year || a.graduation_year || '';
                     const programme = a.programme || a.program || a.course || '';
-                    const status = a.verification_status || a.status || '';
+                    const status = a.final_remarks || a.verification_status || a.status || '';
+                    const studentId = a.index_number || a.student_id || '';
 
                     return `
                         <tr class="hover:bg-gray-50">
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${escapeHtml(name || 'N/A')}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${escapeHtml(a.student_id || 'N/A')}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${escapeHtml(studentId || 'N/A')}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${escapeHtml(programme || 'N/A')}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${escapeHtml(year || 'N/A')}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${escapeHtml(a.email || 'N/A')}</td>

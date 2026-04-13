@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Log;
 
 class PastStudentListController extends Controller
 {
+    private const DEFAULT_ALUMNI_ENDPOINT = 'https://www.stu.edu.gh/identity/getAlumni';
+
     public function index()
     {
         // Build a unique list of graduation years from active year groups.
@@ -34,8 +36,8 @@ class PastStudentListController extends Controller
             'academic_year' => 'required|integer|min:1900|max:' . (date('Y') + 1),
         ]);
 
-        $endpoint = env('UNIVERSITY_ALUMNI_BY_ACADEMIC_YEAR_ENDPOINT');
-        $paramName = env('UNIVERSITY_ALUMNI_BY_ACADEMIC_YEAR_PARAM', 'academic_year');
+        $endpoint = env('UNIVERSITY_ALUMNI_BY_ACADEMIC_YEAR_ENDPOINT', self::DEFAULT_ALUMNI_ENDPOINT);
+        $academicYear = $this->toApiAcademicYear((int) $validated['academic_year']);
 
         if (!$endpoint) {
             return response()->json([
@@ -44,23 +46,50 @@ class PastStudentListController extends Controller
         }
 
         try {
-            $response = Http::timeout(30)->acceptJson()->get($endpoint, [
-                $paramName => $validated['academic_year'],
+            $page = 1;
+            $allAlumni = [];
+            $lastPayload = null;
+
+            do {
+                $response = Http::timeout(60)
+                    ->acceptJson()
+                    ->asJson()
+                    ->post($endpoint, [
+                        'acyear' => $academicYear,
+                        'page' => $page,
+                        'limit' => 'all',
+                    ]);
+
+                if (!$response->successful()) {
+                    return response()->json([
+                        'error' => 'University API request failed.',
+                        'status' => $response->status(),
+                        'body' => $response->body(),
+                    ], 502);
+                }
+
+                $payload = $response->json();
+                $lastPayload = is_array($payload) ? $payload : [];
+                $pageData = $lastPayload['data'] ?? [];
+
+                if (is_array($pageData)) {
+                    $allAlumni = array_merge($allAlumni, $pageData);
+                }
+
+                $totalPages = max((int) ($lastPayload['total_pages'] ?? 1), 1);
+                $page++;
+            } while ($page <= $totalPages);
+
+            return response()->json([
+                'state' => $lastPayload['state'] ?? 'success',
+                'acyear' => $academicYear,
+                'total' => count($allAlumni),
+                'data' => $allAlumni,
             ]);
-
-            if (!$response->successful()) {
-                return response()->json([
-                    'error' => 'University API request failed.',
-                    'status' => $response->status(),
-                    'body' => $response->body(),
-                ], 502);
-            }
-
-            return response()->json($response->json());
         } catch (\Throwable $e) {
             Log::error('PastStudentList fetch failed', [
                 'endpoint' => $endpoint,
-                'academic_year' => $validated['academic_year'],
+                'academic_year' => $academicYear,
                 'error' => $e->getMessage(),
             ]);
 
@@ -68,6 +97,13 @@ class PastStudentListController extends Controller
                 'error' => 'Failed to fetch alumni from university API.',
             ], 500);
         }
+    }
+
+    private function toApiAcademicYear(int $graduationYear): string
+    {
+        $startYear = $graduationYear - 1;
+
+        return $startYear . '/' . $graduationYear;
     }
 }
 
