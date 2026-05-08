@@ -37,7 +37,8 @@ class PastStudentListController extends Controller
         ]);
 
         $endpoint = env('UNIVERSITY_ALUMNI_BY_ACADEMIC_YEAR_ENDPOINT', self::DEFAULT_ALUMNI_ENDPOINT);
-        $academicYear = $this->toApiAcademicYear((int) $validated['academic_year']);
+        $requestedYear = (int) $validated['academic_year'];
+        $academicYearCandidates = $this->toApiAcademicYearCandidates($requestedYear);
 
         if (!$endpoint) {
             return response()->json([
@@ -46,50 +47,43 @@ class PastStudentListController extends Controller
         }
 
         try {
-            $page = 1;
-            $allAlumni = [];
-            $lastPayload = null;
+            $attempts = [];
+            foreach ($academicYearCandidates as $candidate) {
+                $result = $this->fetchAllAlumniForAcademicYear($endpoint, $candidate);
+                $attempts[] = [
+                    'acyear' => $candidate,
+                    'total' => $result['total'],
+                    'state' => $result['state'] ?? null,
+                ];
 
-            do {
-                $response = Http::timeout(60)
-                    ->acceptJson()
-                    ->asJson()
-                    ->post($endpoint, [
-                        'acyear' => $academicYear,
-                        'page' => $page,
-                        'limit' => 'all',
-                    ]);
-
-                if (!$response->successful()) {
+                if ($result['total'] > 0) {
                     return response()->json([
-                        'error' => 'University API request failed.',
-                        'status' => $response->status(),
-                        'body' => $response->body(),
-                    ], 502);
+                        'state' => $result['state'] ?? 'success',
+                        'requested_year' => $requestedYear,
+                        'acyear' => $candidate,
+                        'attempts' => $attempts,
+                        'total' => $result['total'],
+                        'data' => $result['data'],
+                    ]);
                 }
+            }
 
-                $payload = $response->json();
-                $lastPayload = is_array($payload) ? $payload : [];
-                $pageData = $lastPayload['data'] ?? [];
-
-                if (is_array($pageData)) {
-                    $allAlumni = array_merge($allAlumni, $pageData);
-                }
-
-                $totalPages = max((int) ($lastPayload['total_pages'] ?? 1), 1);
-                $page++;
-            } while ($page <= $totalPages);
+            // If both candidates produced zero results, return the last attempt (plus diagnostics).
+            $last = end($attempts) ?: ['acyear' => $academicYearCandidates[0] ?? null];
+            $fallback = $this->fetchAllAlumniForAcademicYear($endpoint, $last['acyear'] ?? '');
 
             return response()->json([
-                'state' => $lastPayload['state'] ?? 'success',
-                'acyear' => $academicYear,
-                'total' => count($allAlumni),
-                'data' => $allAlumni,
+                'state' => $fallback['state'] ?? 'success',
+                'requested_year' => $requestedYear,
+                'acyear' => $last['acyear'] ?? null,
+                'attempts' => $attempts,
+                'total' => $fallback['total'],
+                'data' => $fallback['data'],
             ]);
         } catch (\Throwable $e) {
             Log::error('PastStudentList fetch failed', [
                 'endpoint' => $endpoint,
-                'academic_year' => $academicYear,
+                'academic_year_candidates' => $academicYearCandidates,
                 'error' => $e->getMessage(),
             ]);
 
@@ -99,11 +93,73 @@ class PastStudentListController extends Controller
         }
     }
 
-    private function toApiAcademicYear(int $graduationYear): string
+    private function toApiAcademicYearCandidates(int $selectedYear): array
     {
-        $startYear = $graduationYear - 1;
+        // Historically "academic year" could be interpreted as:
+        // - completion year (e.g., 2019 => 2018/2019)
+        // - start year (e.g., 2019 => 2019/2020)
+        // We try both to avoid empty results due to mapping mismatch.
+        $a = ($selectedYear - 1) . '/' . $selectedYear;
+        $b = $selectedYear . '/' . ($selectedYear + 1);
 
-        return $startYear . '/' . $graduationYear;
+        return array_values(array_unique([$a, $b]));
+    }
+
+    private function fetchAllAlumniForAcademicYear(string $endpoint, string $academicYear): array
+    {
+        $page = 1;
+        $allAlumni = [];
+        $lastPayload = [];
+
+        do {
+            $requestBody = [
+                'acyear' => $academicYear,
+                'page' => $page,
+                'limit' => 'all',
+            ];
+
+            Log::info('PastStudentList outbound request', [
+                'endpoint' => $endpoint,
+                'body' => $requestBody,
+            ]);
+
+            $response = Http::timeout(60)
+                ->acceptJson()
+                ->asJson()
+                ->post($endpoint, $requestBody);
+
+            if (!$response->successful()) {
+                Log::warning('PastStudentList university API failed', [
+                    'endpoint' => $endpoint,
+                    'acyear' => $academicYear,
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                ]);
+
+                return [
+                    'state' => 'error',
+                    'total' => 0,
+                    'data' => [],
+                ];
+            }
+
+            $payload = $response->json();
+            $lastPayload = is_array($payload) ? $payload : [];
+            $pageData = $lastPayload['data'] ?? [];
+
+            if (is_array($pageData)) {
+                $allAlumni = array_merge($allAlumni, $pageData);
+            }
+
+            $totalPages = max((int) ($lastPayload['total_pages'] ?? 1), 1);
+            $page++;
+        } while ($page <= $totalPages);
+
+        return [
+            'state' => $lastPayload['state'] ?? 'success',
+            'total' => count($allAlumni),
+            'data' => $allAlumni,
+        ];
     }
 }
 
