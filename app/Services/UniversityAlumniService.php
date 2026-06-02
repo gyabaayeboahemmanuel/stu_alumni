@@ -17,7 +17,8 @@ class UniversityAlumniService
         $baseUrl = rtrim(config('university_identity.base_url', 'https://www.stu.edu.gh/identity'), '/');
         $path = config('university_identity.get_alumni_path', '/getAlumni.php');
         $this->endpoint = $baseUrl . $path;
-        $this->apiKey = (string) config('university_identity.api_key', '');
+        // Same token as signup SIS verification (App\Helpers\Fuction::pullData)
+        $this->apiKey = (string) config('app.remote_secret', '');
         $this->timeoutSeconds = (int) config('university_identity.timeout', 60);
     }
 

@@ -15,11 +15,7 @@ return [
 
     'get_alumni_path' => env('UNIVERSITY_IDENTITY_GET_ALUMNI_PATH', '/getAlumni.php'),
 
-    // Same token used for signup SIS verification (config app.remote_secret / CODE)
-    'api_key' => env('UNIVERSITY_IDENTITY_API_KEY', env('CODE', '')),
-
-    // Typical format: "Bearer <key>". Can be changed if the university requires a different scheme.
-    'auth_scheme' => env('UNIVERSITY_IDENTITY_AUTH_SCHEME', 'Bearer'),
+    // Uses config('app.remote_secret') / CODE — same token as student verification
 
     'timeout' => (int) env('UNIVERSITY_IDENTITY_TIMEOUT', 60),
 ];
