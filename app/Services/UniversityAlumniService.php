@@ -32,7 +32,7 @@ class UniversityAlumniService
         $lastPayload = [];
 
         do {
-            $payload = $this->postGetAlumni($academicYear, $page, 'all');
+            $payload = $this->postGetAlumni($academicYear, $page, 5);
             $lastPayload = $payload;
 
             $pageData = $payload['data'] ?? [];
@@ -51,7 +51,7 @@ class UniversityAlumniService
         ];
     }
 
-    public function postGetAlumni(string $academicYear, int $page = 1, string|int $limit = 'all'): array
+    public function postGetAlumni(string $academicYear, int $page = 1, int $limit = 5): array
     {
         $requestBody = [
             'acyear' => $academicYear,
