@@ -25,7 +25,7 @@ class UniversityAlumniService
     /**
      * Fetch alumni for an academic year (pages through total_pages when needed).
      */
-    public function fetchAll(string $academicYear, int $limit = 1): array
+    public function fetchAll(string $academicYear, int|string $limit = 'all'): array
     {
         $page = 1;
         $all = [];
@@ -67,7 +67,7 @@ class UniversityAlumniService
         ];
     }
 
-    public function postGetAlumni(string $academicYear, int $page = 1, int|string $limit = 1): array
+    public function postGetAlumni(string $academicYear, int $page = 1, int|string $limit = 'all'): array
     {
         $requestBody = [
             'acyear' => $academicYear,
@@ -114,8 +114,11 @@ class UniversityAlumniService
         }
 
         $debug['university_response'] = $raw;
+        $debug['limit_sent'] = $limit;
 
         $payload = $this->normalizePayload($raw);
+        $debug['limit_returned'] = $payload['limit'] ?? ($raw['limit'] ?? null);
+
         $apiStatus = (int) ($raw['status'] ?? 200);
         $records = $payload['data'] ?? [];
 

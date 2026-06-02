@@ -65,17 +65,34 @@
             </h2>
             <span class="text-xs text-gray-500">Visible because APP_DEBUG=true</span>
         </div>
-        <div class="p-6 space-y-4 text-sm">
+        <div class="p-6 space-y-4 text-sm bg-white">
             <div>
-                <h3 class="font-semibold text-gray-800 mb-2">Request sent</h3>
-                <pre id="debug_request" class="bg-gray-900 text-green-400 p-4 rounded-lg overflow-x-auto text-xs whitespace-pre-wrap"></pre>
+                <h3 class="font-semibold text-gray-900 mb-2">Request sent</h3>
+                <pre id="debug_request" class="past-students-debug-pre"></pre>
             </div>
             <div>
-                <h3 class="font-semibold text-gray-800 mb-2">Response received</h3>
-                <pre id="debug_response" class="bg-gray-900 text-blue-300 p-4 rounded-lg overflow-x-auto text-xs whitespace-pre-wrap"></pre>
+                <h3 class="font-semibold text-gray-900 mb-2">Response received</h3>
+                <pre id="debug_response" class="past-students-debug-pre"></pre>
             </div>
         </div>
     </div>
+
+    <style>
+        .past-students-debug-pre {
+            display: block;
+            background: #f8fafc !important;
+            color: #0f172a !important;
+            border: 1px solid #cbd5e1;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            font-size: 12px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-break: break-word;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        }
+    </style>
     @endif
 </div>
 
@@ -112,6 +129,10 @@
         const sent = {
             app_request: appRequest,
             university: payload?.debug ?? null,
+            limit_note: payload?.debug
+                ? 'Sent limit: ' + JSON.stringify(payload.debug.limit_sent)
+                  + ' | API returned limit: ' + JSON.stringify(payload.debug.limit_returned)
+                : null,
         };
 
         debugRequest.textContent = JSON.stringify(sent, null, 2);
