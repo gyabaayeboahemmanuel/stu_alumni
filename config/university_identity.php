@@ -13,8 +13,10 @@ return [
 
     'base_url' => env('UNIVERSITY_IDENTITY_BASE_URL', 'https://www.stu.edu.gh/identity'),
 
-    // Default to SIS_API_KEY for consistency with SIS verification setup
-    'api_key' => env('UNIVERSITY_IDENTITY_API_KEY', env('SIS_API_KEY', '')),
+    'get_alumni_path' => env('UNIVERSITY_IDENTITY_GET_ALUMNI_PATH', '/getAlumni.php'),
+
+    // Same token used for signup SIS verification (config app.remote_secret / CODE)
+    'api_key' => env('UNIVERSITY_IDENTITY_API_KEY', env('CODE', '')),
 
     // Typical format: "Bearer <key>". Can be changed if the university requires a different scheme.
     'auth_scheme' => env('UNIVERSITY_IDENTITY_AUTH_SCHEME', 'Bearer'),

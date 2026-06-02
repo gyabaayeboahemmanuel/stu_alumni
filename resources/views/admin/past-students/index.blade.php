@@ -114,7 +114,8 @@
                 resultsTitle.textContent = 'Alumni results (' + alumni.length + ')';
 
                 if (alumni.length === 0) {
-                    resultsBody.innerHTML = '<div class="text-gray-600">No alumni found for ' + escapeHtml(academicYear) + '.</div>';
+                    const apiMessage = payload?.message || 'No alumni found for ' + escapeHtml(academicYear) + '.';
+                    resultsBody.innerHTML = '<div class="text-gray-600">' + escapeHtml(apiMessage) + '</div>';
                     return;
                 }
 

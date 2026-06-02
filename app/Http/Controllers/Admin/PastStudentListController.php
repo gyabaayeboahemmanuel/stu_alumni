@@ -46,10 +46,17 @@ class PastStudentListController extends Controller
         try {
             $result = $this->alumniService->fetchAll($academicYear);
 
+            if (!$result['success']) {
+                return response()->json([
+                    'error' => $result['message'] ?? 'Failed to fetch alumni from university API.',
+                ], 502);
+            }
+
             return response()->json([
                 'state' => $result['state'] ?? 'success',
                 'acyear' => $academicYear,
                 'total' => $result['total'],
+                'message' => $result['message'],
                 'data' => $result['data'],
             ]);
         } catch (\Throwable $e) {

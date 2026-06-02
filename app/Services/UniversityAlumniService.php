@@ -8,31 +8,35 @@ use Illuminate\Support\Facades\Log;
 
 class UniversityAlumniService
 {
-    private string $baseUrl;
+    private string $endpoint;
     private string $apiKey;
-    private string $authScheme;
     private int $timeoutSeconds;
 
     public function __construct()
     {
-        $this->baseUrl = rtrim(config('university_identity.base_url', 'https://www.stu.edu.gh/identity'), '/');
+        $baseUrl = rtrim(config('university_identity.base_url', 'https://www.stu.edu.gh/identity'), '/');
+        $path = config('university_identity.get_alumni_path', '/getAlumni.php');
+        $this->endpoint = $baseUrl . $path;
         $this->apiKey = (string) config('university_identity.api_key', '');
-        $this->authScheme = (string) config('university_identity.auth_scheme', 'Bearer');
         $this->timeoutSeconds = (int) config('university_identity.timeout', 60);
     }
 
     /**
-     * Fetch all alumni for an academic year by paging through the upstream API.
-     * Returns a simplified payload: state, total, data.
+     * Fetch alumni for an academic year (pages through total_pages when needed).
      */
-    public function fetchAll(string $academicYear): array
+    public function fetchAll(string $academicYear, int $limit = 1): array
     {
         $page = 1;
         $all = [];
         $lastPayload = [];
 
         do {
-            $payload = $this->postGetAlumni($academicYear, $page, 5);
+            $result = $this->postGetAlumni($academicYear, $page, $limit);
+            if (!$result['success']) {
+                return $result;
+            }
+
+            $payload = $result['payload'];
             $lastPayload = $payload;
 
             $pageData = $payload['data'] ?? [];
@@ -45,13 +49,17 @@ class UniversityAlumniService
         } while ($page <= $totalPages);
 
         return [
+            'success' => true,
             'state' => $lastPayload['state'] ?? 'success',
             'total' => count($all),
             'data' => $all,
+            'message' => count($all) === 0
+                ? ($lastPayload['state'] ?? 'No alumni found for this academic year.')
+                : null,
         ];
     }
 
-    public function postGetAlumni(string $academicYear, int $page = 1, int $limit = 5): array
+    public function postGetAlumni(string $academicYear, int $page = 1, int|string $limit = 1): array
     {
         $requestBody = [
             'acyear' => $academicYear,
@@ -60,29 +68,85 @@ class UniversityAlumniService
         ];
 
         Log::info('UniversityAlumniService outbound request', [
-            'endpoint' => $this->baseUrl . '/getAlumni',
+            'endpoint' => $this->endpoint,
             'body' => $requestBody,
         ]);
 
         $response = $this->http()
             ->asJson()
-            ->post($this->baseUrl . '/getAlumni', $requestBody);
+            ->post($this->endpoint, $requestBody);
 
         if (!$response->successful()) {
-            Log::warning('UniversityAlumniService request failed', [
-                'endpoint' => $this->baseUrl . '/getAlumni',
+            Log::warning('UniversityAlumniService HTTP request failed', [
+                'endpoint' => $this->endpoint,
                 'status' => $response->status(),
                 'body' => $response->body(),
             ]);
 
             return [
-                'state' => 'error',
+                'success' => false,
+                'message' => 'University API request failed (HTTP ' . $response->status() . ').',
                 'data' => [],
             ];
         }
 
-        $data = $response->json();
-        return is_array($data) ? $data : ['state' => 'error', 'data' => []];
+        $raw = $response->json();
+        if (!is_array($raw)) {
+            return [
+                'success' => false,
+                'message' => 'University API returned an invalid response.',
+                'data' => [],
+            ];
+        }
+
+        $payload = $this->normalizePayload($raw);
+        $apiStatus = (int) ($raw['status'] ?? 200);
+        $records = $payload['data'] ?? [];
+
+        Log::info('UniversityAlumniService response', [
+            'endpoint' => $this->endpoint,
+            'api_status' => $apiStatus,
+            'state' => $payload['state'] ?? null,
+            'total' => $payload['total'] ?? count($records),
+        ]);
+
+        if ($apiStatus === 401) {
+            $detail = is_string($raw['detail'] ?? null)
+                ? $raw['detail']
+                : ($payload['state'] ?? 'Authorization failed.');
+
+            return [
+                'success' => false,
+                'message' => $detail,
+                'data' => [],
+            ];
+        }
+
+        if ($apiStatus === 404 || empty($records)) {
+            return [
+                'success' => true,
+                'payload' => $payload,
+                'message' => $payload['state'] ?? 'No alumni found for this academic year.',
+            ];
+        }
+
+        return [
+            'success' => true,
+            'payload' => $payload,
+            'message' => null,
+        ];
+    }
+
+    /**
+     * Identity API often wraps results: { status, desc, detail: { state, data, ... } }
+     */
+    private function normalizePayload(array $raw): array
+    {
+        if (isset($raw['detail']) && is_array($raw['detail'])) {
+            return $raw['detail'];
+        }
+
+        return $raw;
     }
 
     private function http(): PendingRequest
@@ -93,10 +157,11 @@ class UniversityAlumniService
         ];
 
         if ($this->apiKey !== '') {
-            $headers['Authorization'] = trim($this->authScheme . ' ' . $this->apiKey);
+            $headers['Authorization'] = 'Bearer ' . $this->apiKey;
         }
 
-        return Http::timeout($this->timeoutSeconds)->withHeaders($headers);
+        return Http::timeout($this->timeoutSeconds)
+            ->withOptions(['verify' => false])
+            ->withHeaders($headers);
     }
 }
-
