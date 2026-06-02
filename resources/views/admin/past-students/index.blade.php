@@ -66,6 +66,7 @@
             <span class="text-xs text-gray-500">Visible because APP_DEBUG=true</span>
         </div>
         <div class="p-6 space-y-4 text-sm bg-white">
+            <div id="debug_summary" class="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-950 hidden"></div>
             <div>
                 <h3 class="font-semibold text-gray-900 mb-2">Request sent</h3>
                 <pre id="debug_request" class="past-students-debug-pre"></pre>
@@ -117,8 +118,40 @@
         return [];
     }
 
+    function interpretApiDebug(payload) {
+        const dbg = payload?.debug ?? {};
+        const uni = dbg.university_response ?? {};
+        const detail = uni.detail ?? {};
+        const httpStatus = dbg.university_http_status;
+        const apiStatus = uni.status;
+
+        let apiStatusMeaning = 'See full response below.';
+        if (apiStatus === 401) {
+            apiStatusMeaning = 'Authorization failed — check CODE token in .env.';
+        } else if (apiStatus === 404) {
+            apiStatusMeaning = 'No alumni records for the selected academic year. This is NOT a broken URL or HTTP 404 page.';
+        } else if (apiStatus === 200 || uni.state === 'success') {
+            apiStatusMeaning = 'Records returned successfully.';
+        }
+
+        return {
+            http_status: httpStatus,
+            connection: httpStatus === 200 ? 'OK — university server reached' : 'Failed to reach server',
+            authorization: apiStatus === 401 ? 'Failed' : 'OK — Bearer token accepted',
+            api_status: apiStatus,
+            api_status_meaning: apiStatusMeaning,
+            desc: uni.desc ?? null,
+            requested_acyear: payload?.acyear ?? dbg.university_request?.acyear ?? null,
+            current_acyear_on_server: detail.current_acyear ?? uni.current_acyear ?? null,
+            limit_sent: dbg.limit_sent ?? null,
+            limit_returned: dbg.limit_returned ?? null,
+            total_from_api: detail.total ?? uni.total ?? null,
+        };
+    }
+
     function renderDebug(appRequest, payload) {
         const debugPanel = document.getElementById('past_students_debug');
+        const debugSummary = document.getElementById('debug_summary');
         const debugRequest = document.getElementById('debug_request');
         const debugResponse = document.getElementById('debug_response');
 
@@ -126,14 +159,27 @@
             return;
         }
 
+        const interpretation = interpretApiDebug(payload);
         const sent = {
+            interpretation: interpretation,
             app_request: appRequest,
             university: payload?.debug ?? null,
-            limit_note: payload?.debug
-                ? 'Sent limit: ' + JSON.stringify(payload.debug.limit_sent)
-                  + ' | API returned limit: ' + JSON.stringify(payload.debug.limit_returned)
-                : null,
         };
+
+        if (debugSummary) {
+            debugSummary.innerHTML = `
+                <p class="font-semibold mb-2">How to read this response</p>
+                <ul class="list-disc pl-5 space-y-1">
+                    <li><strong>HTTP ${escapeHtml(interpretation.http_status)}</strong> — ${escapeHtml(interpretation.connection)}</li>
+                    <li><strong>Authorization</strong> — ${escapeHtml(interpretation.authorization)}</li>
+                    <li><strong>API status ${escapeHtml(interpretation.api_status)}</strong> — ${escapeHtml(interpretation.api_status_meaning)}</li>
+                    <li><strong>Requested acyear</strong> — ${escapeHtml(interpretation.requested_acyear || 'N/A')}</li>
+                    <li><strong>Server current acyear</strong> — ${escapeHtml(interpretation.current_acyear_on_server || 'N/A')}</li>
+                    <li><strong>Limit</strong> — sent ${escapeHtml(JSON.stringify(interpretation.limit_sent))}, API returned ${escapeHtml(JSON.stringify(interpretation.limit_returned))}</li>
+                </ul>
+            `;
+            debugSummary.classList.remove('hidden');
+        }
 
         debugRequest.textContent = JSON.stringify(sent, null, 2);
         debugResponse.textContent = JSON.stringify(payload, null, 2);
@@ -187,8 +233,15 @@
                 resultsTitle.textContent = 'Alumni results (' + alumni.length + ')';
 
                 if (alumni.length === 0) {
+                    const interpretation = interpretApiDebug(payload);
                     const apiMessage = payload?.message || 'No alumni found for ' + escapeHtml(academicYear) + '.';
-                    resultsBody.innerHTML = '<div class="text-gray-600">' + escapeHtml(apiMessage) + '</div>';
+                    let extra = '';
+                    if (interpretation.current_acyear_on_server) {
+                        extra = '<p class="mt-2 text-gray-500">University server current academic year: <strong>'
+                            + escapeHtml(interpretation.current_acyear_on_server) + '</strong>. '
+                            + 'Try a recent year such as <strong>2024/2025</strong> (from your boss\'s sample).</p>';
+                    }
+                    resultsBody.innerHTML = '<div class="text-gray-700">' + escapeHtml(apiMessage) + extra + '</div>';
                     return;
                 }
 
