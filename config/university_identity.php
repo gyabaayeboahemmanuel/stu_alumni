@@ -11,7 +11,7 @@ return [
     |
     */
 
-    'base_url' => env('UNIVERSITY_IDENTITY_BASE_URL', 'https://www.stu.edu.gh/identity'),
+    'base_url' => env('UNIVERSITY_IDENTITY_BASE_URL', 'https://identity.stu.edu.gh'),
 
     'get_alumni_path' => env('UNIVERSITY_IDENTITY_GET_ALUMNI_PATH', '/getAlumni.php'),
 

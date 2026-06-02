@@ -14,7 +14,7 @@ class UniversityAlumniService
 
     public function __construct()
     {
-        $baseUrl = rtrim(config('university_identity.base_url', 'https://www.stu.edu.gh/identity'), '/');
+        $baseUrl = rtrim(config('university_identity.base_url', 'https://identity.stu.edu.gh'), '/');
         $path = config('university_identity.get_alumni_path', '/getAlumni.php');
         $this->endpoint = $baseUrl . $path;
         // Same token as signup SIS verification (App\Helpers\Fuction::pullData)
