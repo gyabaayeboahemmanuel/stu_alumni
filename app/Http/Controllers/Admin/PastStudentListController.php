@@ -49,6 +49,7 @@ class PastStudentListController extends Controller
             if (!$result['success']) {
                 return response()->json([
                     'error' => $result['message'] ?? 'Failed to fetch alumni from university API.',
+                    'debug' => $result['debug'] ?? null,
                 ], 502);
             }
 
@@ -58,6 +59,13 @@ class PastStudentListController extends Controller
                 'total' => $result['total'],
                 'message' => $result['message'],
                 'data' => $result['data'],
+                'debug' => array_merge($result['debug'] ?? [], [
+                    'app_request' => [
+                        'method' => 'GET',
+                        'url' => $request->fullUrl(),
+                        'query' => $request->query(),
+                    ],
+                ]),
             ]);
         } catch (\Throwable $e) {
             Log::error('PastStudentList fetch failed', [

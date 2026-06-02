@@ -30,10 +30,16 @@ class UniversityAlumniService
         $page = 1;
         $all = [];
         $lastPayload = [];
+        $debug = null;
 
         do {
             $result = $this->postGetAlumni($academicYear, $page, $limit);
+            if ($debug === null && isset($result['debug'])) {
+                $debug = $result['debug'];
+            }
+
             if (!$result['success']) {
+                $result['debug'] = $debug;
                 return $result;
             }
 
@@ -57,6 +63,7 @@ class UniversityAlumniService
             'message' => count($all) === 0
                 ? ($lastPayload['state'] ?? 'No alumni found for this academic year.')
                 : null,
+            'debug' => $debug,
         ];
     }
 
@@ -77,6 +84,8 @@ class UniversityAlumniService
             ->asJson()
             ->post($this->endpoint, $requestBody);
 
+        $debug = $this->buildDebugInfo($requestBody, $response);
+
         if (!$response->successful()) {
             Log::warning('UniversityAlumniService HTTP request failed', [
                 'endpoint' => $this->endpoint,
@@ -84,10 +93,13 @@ class UniversityAlumniService
                 'body' => $response->body(),
             ]);
 
+            $debug['university_response'] = $response->json() ?? $response->body();
+
             return [
                 'success' => false,
                 'message' => 'University API request failed (HTTP ' . $response->status() . ').',
                 'data' => [],
+                'debug' => $debug,
             ];
         }
 
@@ -97,8 +109,11 @@ class UniversityAlumniService
                 'success' => false,
                 'message' => 'University API returned an invalid response.',
                 'data' => [],
+                'debug' => $debug,
             ];
         }
+
+        $debug['university_response'] = $raw;
 
         $payload = $this->normalizePayload($raw);
         $apiStatus = (int) ($raw['status'] ?? 200);
@@ -120,6 +135,7 @@ class UniversityAlumniService
                 'success' => false,
                 'message' => $detail,
                 'data' => [],
+                'debug' => $debug,
             ];
         }
 
@@ -128,6 +144,7 @@ class UniversityAlumniService
                 'success' => true,
                 'payload' => $payload,
                 'message' => $payload['state'] ?? 'No alumni found for this academic year.',
+                'debug' => $debug,
             ];
         }
 
@@ -135,7 +152,39 @@ class UniversityAlumniService
             'success' => true,
             'payload' => $payload,
             'message' => null,
+            'debug' => $debug,
         ];
+    }
+
+    private function buildDebugInfo(array $requestBody, $response): array
+    {
+        if (!config('app.debug')) {
+            return [];
+        }
+
+        return [
+            'university_endpoint' => $this->endpoint,
+            'university_method' => 'POST',
+            'university_request' => $requestBody,
+            'university_headers' => [
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json',
+                'Authorization' => $this->apiKey !== ''
+                    ? 'Bearer ' . $this->maskToken($this->apiKey)
+                    : '(missing — check CODE in .env)',
+            ],
+            'university_http_status' => $response->status(),
+            'university_response' => null,
+        ];
+    }
+
+    private function maskToken(string $token): string
+    {
+        if (strlen($token) <= 12) {
+            return '***';
+        }
+
+        return substr($token, 0, 8) . '...' . substr($token, -8) . ' (len:' . strlen($token) . ')';
     }
 
     /**

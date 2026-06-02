@@ -43,7 +43,7 @@
         </div>
     </div>
 
-    <div id="past_students_results" class="card overflow-hidden">
+    <div id="past_students_results" class="card overflow-hidden mb-6">
         <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
             <h2 id="results_title" class="text-lg font-semibold text-gray-900">
                 Alumni results
@@ -56,6 +56,27 @@
             </div>
         </div>
     </div>
+
+    @if(config('app.debug'))
+    <div id="past_students_debug" class="card overflow-hidden hidden">
+        <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+            <h2 class="text-lg font-semibold text-gray-900">
+                <i class="fas fa-bug mr-2 text-amber-600"></i>API Debug
+            </h2>
+            <span class="text-xs text-gray-500">Visible because APP_DEBUG=true</span>
+        </div>
+        <div class="p-6 space-y-4 text-sm">
+            <div>
+                <h3 class="font-semibold text-gray-800 mb-2">Request sent</h3>
+                <pre id="debug_request" class="bg-gray-900 text-green-400 p-4 rounded-lg overflow-x-auto text-xs whitespace-pre-wrap"></pre>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-800 mb-2">Response received</h3>
+                <pre id="debug_response" class="bg-gray-900 text-blue-300 p-4 rounded-lg overflow-x-auto text-xs whitespace-pre-wrap"></pre>
+            </div>
+        </div>
+    </div>
+    @endif
 </div>
 
 <script>
@@ -79,6 +100,30 @@
         return [];
     }
 
+    function renderDebug(appRequest, payload) {
+        const debugPanel = document.getElementById('past_students_debug');
+        const debugRequest = document.getElementById('debug_request');
+        const debugResponse = document.getElementById('debug_response');
+
+        if (!debugPanel || !debugRequest || !debugResponse) {
+            return;
+        }
+
+        const sent = {
+            app_request: appRequest,
+            university: payload?.debug ?? null,
+        };
+
+        debugRequest.textContent = JSON.stringify(sent, null, 2);
+        debugResponse.textContent = JSON.stringify(payload, null, 2);
+        debugPanel.classList.remove('hidden');
+
+        console.group('Past Student List — API Debug');
+        console.log('Request sent:', sent);
+        console.log('Response received:', payload);
+        console.groupEnd();
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         const yearSelect = document.getElementById('academic_year');
         const fetchBtn = document.getElementById('fetch_past_students');
@@ -97,16 +142,23 @@
             statusEl?.classList.remove('hidden');
             resultsBody.innerHTML = '<div class="text-gray-600">Fetching alumni…</div>';
 
+            const fetchUrl = '{{ route('admin.past-students.fetch') }}?academic_year=' + encodeURIComponent(academicYear);
+            const appRequest = {
+                method: 'GET',
+                url: fetchUrl,
+                query: { academic_year: academicYear },
+            };
+
             try {
-                const response = await fetch(
-                    '{{ route('admin.past-students.fetch') }}?academic_year=' + encodeURIComponent(academicYear),
-                    { headers: { 'Accept': 'application/json' } }
-                );
+                const response = await fetch(fetchUrl, { headers: { 'Accept': 'application/json' } });
 
                 const payload = await response.json().catch(() => ({}));
+                renderDebug(appRequest, payload);
+
                 if (!response.ok) {
                     const msg = payload?.error || 'Request failed.';
                     resultsBody.innerHTML = '<div class="text-red-600">' + escapeHtml(msg) + '</div>';
+                    resultsTitle.textContent = 'Alumni results (error)';
                     return;
                 }
 
@@ -163,7 +215,9 @@
                     </table>
                 `;
             } catch (e) {
+                renderDebug(appRequest, { error: e?.message || String(e) });
                 resultsBody.innerHTML = '<div class="text-red-600">Unexpected error: ' + escapeHtml(e?.message || String(e)) + '</div>';
+                resultsTitle.textContent = 'Alumni results (error)';
             } finally {
                 statusEl?.classList.add('hidden');
             }
