@@ -20,11 +20,11 @@
     <div class="card p-6 mb-6">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
             <div class="md:col-span-2">
-                <label for="academic_year" class="form-label">Academic Year (Graduation Year)</label>
+                <label for="academic_year" class="form-label">Academic Year</label>
                 <select id="academic_year" class="form-input" aria-label="Academic year">
-                    <option value="">Select a year</option>
-                    @foreach($years as $year)
-                        <option value="{{ $year }}">{{ $year }}</option>
+                    <option value="">Select an academic year</option>
+                    @foreach($academicYears as $academicYear)
+                        <option value="{{ $academicYear }}">{{ $academicYear }}</option>
                     @endforeach
                 </select>
             </div>
@@ -150,7 +150,7 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student ID</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Programme</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Year</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Academic Year</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>

@@ -10,76 +10,51 @@ use Illuminate\Support\Facades\Log;
 
 class PastStudentListController extends Controller
 {
-    private const DEFAULT_ALUMNI_ENDPOINT = 'https://www.stu.edu.gh/identity/getAlumni';
-
     public function __construct(private readonly UniversityAlumniService $alumniService)
     {
     }
 
     public function index()
     {
-        // Build a unique list of graduation years from active year groups.
-        $years = YearGroup::active()
+        $graduationYears = YearGroup::active()
             ->get()
             ->flatMap(function (YearGroup $group) {
-                // Example: start_year=2010, end_year=2014 -> 2010..2014
                 return range($group->start_year, $group->end_year);
             })
             ->unique()
             ->sortDesc()
+            ->values();
+
+        // API expects acyear like "2024/2025" (start/end of academic session).
+        $academicYears = $graduationYears
+            ->map(fn (int $graduationYear) => ($graduationYear - 1) . '/' . $graduationYear)
+            ->unique()
             ->values()
             ->all();
 
-        return view('admin.past-students.index', compact('years'));
+        return view('admin.past-students.index', compact('academicYears'));
     }
 
     public function fetchByAcademicYear(Request $request)
     {
         $validated = $request->validate([
-            // Interpreting "academic year" as a single graduation year.
-            'academic_year' => 'required|integer|min:1900|max:' . (date('Y') + 1),
+            'academic_year' => ['required', 'regex:/^\d{4}\/\d{4}$/'],
         ]);
 
-        $requestedYear = (int) $validated['academic_year'];
-        $academicYearCandidates = $this->toApiAcademicYearCandidates($requestedYear);
+        $academicYear = $validated['academic_year'];
 
         try {
-            $attempts = [];
-            foreach ($academicYearCandidates as $candidate) {
-                $result = $this->alumniService->fetchAll($candidate);
-                $attempts[] = [
-                    'acyear' => $candidate,
-                    'total' => $result['total'],
-                    'state' => $result['state'] ?? null,
-                ];
-
-                if ($result['total'] > 0) {
-                    return response()->json([
-                        'state' => $result['state'] ?? 'success',
-                        'requested_year' => $requestedYear,
-                        'acyear' => $candidate,
-                        'attempts' => $attempts,
-                        'total' => $result['total'],
-                        'data' => $result['data'],
-                    ]);
-                }
-            }
-
-            // If both candidates produced zero results, return the last attempt (plus diagnostics).
-            $last = end($attempts) ?: ['acyear' => $academicYearCandidates[0] ?? null];
-            $fallback = $this->alumniService->fetchAll((string) ($last['acyear'] ?? ''));
+            $result = $this->alumniService->fetchAll($academicYear);
 
             return response()->json([
-                'state' => $fallback['state'] ?? 'success',
-                'requested_year' => $requestedYear,
-                'acyear' => $last['acyear'] ?? null,
-                'attempts' => $attempts,
-                'total' => $fallback['total'],
-                'data' => $fallback['data'],
+                'state' => $result['state'] ?? 'success',
+                'acyear' => $academicYear,
+                'total' => $result['total'],
+                'data' => $result['data'],
             ]);
         } catch (\Throwable $e) {
             Log::error('PastStudentList fetch failed', [
-                'academic_year_candidates' => $academicYearCandidates,
+                'academic_year' => $academicYear,
                 'error' => $e->getMessage(),
             ]);
 
@@ -87,18 +62,6 @@ class PastStudentListController extends Controller
                 'error' => 'Failed to fetch alumni from university API.',
             ], 500);
         }
-    }
-
-    private function toApiAcademicYearCandidates(int $selectedYear): array
-    {
-        // Historically "academic year" could be interpreted as:
-        // - completion year (e.g., 2019 => 2018/2019)
-        // - start year (e.g., 2019 => 2019/2020)
-        // We try both to avoid empty results due to mapping mismatch.
-        $a = ($selectedYear - 1) . '/' . $selectedYear;
-        $b = $selectedYear . '/' . ($selectedYear + 1);
-
-        return array_values(array_unique([$a, $b]));
     }
 
 }
