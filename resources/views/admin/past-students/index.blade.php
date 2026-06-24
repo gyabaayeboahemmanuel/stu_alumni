@@ -55,6 +55,21 @@
                 Select an academic year and click <strong>Fetch</strong>.
             </div>
         </div>
+
+        <div id="results_pagination" class="px-6 py-4 border-t border-gray-200 hidden">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <p id="pagination_summary" class="text-sm text-gray-600"></p>
+                <div class="flex items-center gap-2">
+                    <button type="button" id="pagination_prev" class="btn-secondary text-sm px-3 py-1.5" disabled>
+                        <i class="fas fa-chevron-left mr-1"></i>Previous
+                    </button>
+                    <span id="pagination_page_label" class="text-sm text-gray-700 px-2"></span>
+                    <button type="button" id="pagination_next" class="btn-secondary text-sm px-3 py-1.5" disabled>
+                        Next<i class="fas fa-chevron-right ml-1"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
     @if(config('app.debug'))
@@ -120,18 +135,23 @@
 
     function interpretApiDebug(payload) {
         const dbg = payload?.debug ?? {};
-        const uni = dbg.university_response ?? {};
-        const detail = uni.detail ?? {};
-        const httpStatus = dbg.university_http_status;
-        const apiStatus = uni.status;
+        const uni = dbg.university ?? dbg;
+        const uniResponse = uni.university_response ?? uni;
+        const detail = uniResponse.detail ?? {};
+        const httpStatus = uni.university_http_status ?? dbg.university_http_status;
+        const apiStatus = uniResponse.status ?? uni.status;
 
         let apiStatusMeaning = 'See full response below.';
         if (apiStatus === 401) {
             apiStatusMeaning = 'Authorization failed — check CODE token in .env.';
         } else if (apiStatus === 404) {
             apiStatusMeaning = 'No alumni records for the selected academic year. This is NOT a broken URL or HTTP 404 page.';
-        } else if (apiStatus === 200 || uni.state === 'success') {
+        } else if (apiStatus === 200 || uniResponse.state === 'success' || payload?.state === 'success') {
             apiStatusMeaning = 'Records returned successfully.';
+        }
+
+        if (dbg.from_cache) {
+            apiStatusMeaning += ' (page served from cache)';
         }
 
         return {
@@ -140,12 +160,12 @@
             authorization: apiStatus === 401 ? 'Failed' : 'OK — Bearer token accepted',
             api_status: apiStatus,
             api_status_meaning: apiStatusMeaning,
-            desc: uni.desc ?? null,
-            requested_acyear: payload?.acyear ?? dbg.university_request?.acyear ?? null,
-            current_acyear_on_server: detail.current_acyear ?? uni.current_acyear ?? null,
-            limit_sent: dbg.limit_sent ?? null,
-            limit_returned: dbg.limit_returned ?? null,
-            total_from_api: detail.total ?? uni.total ?? null,
+            desc: uniResponse.desc ?? uni.desc ?? null,
+            requested_acyear: payload?.acyear ?? uni.university_request?.acyear ?? dbg.university_request?.acyear ?? null,
+            current_acyear_on_server: detail.current_acyear ?? uniResponse.current_acyear ?? uni.current_acyear ?? null,
+            limit_sent: uni.limit_sent ?? dbg.limit_sent ?? null,
+            limit_returned: uni.limit_returned ?? dbg.limit_returned ?? null,
+            total_from_api: payload?.total ?? detail.total ?? uniResponse.total ?? uni.total ?? null,
         };
     }
 
@@ -163,7 +183,8 @@
         const sent = {
             interpretation: interpretation,
             app_request: appRequest,
-            university: payload?.debug ?? null,
+            university: payload?.debug?.university ?? payload?.debug ?? null,
+            from_cache: payload?.debug?.from_cache ?? false,
         };
 
         if (debugSummary) {
@@ -197,28 +218,114 @@
         const statusEl = document.getElementById('fetch_status');
         const resultsBody = document.getElementById('results_body');
         const resultsTitle = document.getElementById('results_title');
+        const paginationPanel = document.getElementById('results_pagination');
+        const paginationSummary = document.getElementById('pagination_summary');
+        const paginationPageLabel = document.getElementById('pagination_page_label');
+        const paginationPrev = document.getElementById('pagination_prev');
+        const paginationNext = document.getElementById('pagination_next');
 
-        fetchBtn?.addEventListener('click', async () => {
-            const academicYear = yearSelect?.value;
+        const fetchRoute = '{{ route('admin.past-students.fetch') }}';
+        let currentAcademicYear = '';
+        let currentPage = 1;
 
-            if (!academicYear) {
-                resultsBody.innerHTML = '<div class="text-red-600">Please select an academic year.</div>';
+        function buildFetchUrl(academicYear, page, refresh) {
+            const params = new URLSearchParams({
+                academic_year: academicYear,
+                page: String(page),
+            });
+            if (refresh) {
+                params.set('refresh', '1');
+            }
+            return fetchRoute + '?' + params.toString();
+        }
+
+        function updatePaginationControls(pagination, total) {
+            if (!pagination || total === 0) {
+                paginationPanel?.classList.add('hidden');
                 return;
             }
 
-            statusEl?.classList.remove('hidden');
-            resultsBody.innerHTML = '<div class="text-gray-600">Fetching alumni…</div>';
+            paginationPanel?.classList.remove('hidden');
+            paginationSummary.textContent = 'Showing ' + pagination.from + '–' + pagination.to + ' of ' + total;
+            paginationPageLabel.textContent = 'Page ' + pagination.current_page + ' of ' + pagination.last_page;
+            paginationPrev.disabled = pagination.current_page <= 1;
+            paginationNext.disabled = pagination.current_page >= pagination.last_page;
+        }
 
-            const fetchUrl = '{{ route('admin.past-students.fetch') }}?academic_year=' + encodeURIComponent(academicYear);
+        function renderAlumniTable(alumni, academicYear, total, pagination) {
+            resultsTitle.textContent = 'Alumni results (' + total + ')';
+            updatePaginationControls(pagination, total);
+
+            if (alumni.length === 0) {
+                return false;
+            }
+
+            const rowsHtml = alumni.map(a => {
+                const name = a.fullname || a.full_name || a.name || (
+                    (a.first_name || '') + ' ' + (a.last_name || '')
+                ).trim();
+
+                const year = a.acyear || a.acc_year || a.year_of_completion || a.academic_year || a.graduation_year || '';
+                const programme = a.programme || a.program || a.course || '';
+                const status = a.final_remarks || a.verification_status || a.status || '';
+                const studentId = a.index_number || a.student_id || '';
+
+                return `
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${escapeHtml(name || 'N/A')}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${escapeHtml(studentId || 'N/A')}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${escapeHtml(programme || 'N/A')}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${escapeHtml(year || 'N/A')}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${escapeHtml(a.email || 'N/A')}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${escapeHtml(a.phone || 'N/A')}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            ${status ? '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">' + escapeHtml(status) + '</span>' : 'N/A'}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            resultsBody.innerHTML = `
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student ID</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Programme</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Academic Year</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        ${rowsHtml}
+                    </tbody>
+                </table>
+            `;
+
+            return true;
+        }
+
+        async function loadAlumniPage(academicYear, page, refresh) {
+            currentAcademicYear = academicYear;
+            currentPage = page;
+
+            statusEl?.classList.remove('hidden');
+            const loadingMsg = refresh
+                ? 'Fetching alumni from university…'
+                : 'Loading page ' + page + '…';
+            resultsBody.innerHTML = '<div class="text-gray-600">' + loadingMsg + '</div>';
+
+            const fetchUrl = buildFetchUrl(academicYear, page, refresh);
             const appRequest = {
                 method: 'GET',
                 url: fetchUrl,
-                query: { academic_year: academicYear },
+                query: Object.fromEntries(new URL(fetchUrl, window.location.origin).searchParams),
             };
 
             try {
                 const response = await fetch(fetchUrl, { headers: { 'Accept': 'application/json' } });
-
                 const payload = await response.json().catch(() => ({}));
                 renderDebug(appRequest, payload);
 
@@ -226,75 +333,56 @@
                     const msg = payload?.error || 'Request failed.';
                     resultsBody.innerHTML = '<div class="text-red-600">' + escapeHtml(msg) + '</div>';
                     resultsTitle.textContent = 'Alumni results (error)';
+                    paginationPanel?.classList.add('hidden');
                     return;
                 }
 
                 const alumni = normalizeAlumniPayload(payload);
-                resultsTitle.textContent = 'Alumni results (' + alumni.length + ')';
+                const total = payload?.total ?? alumni.length;
+                const pagination = payload?.pagination ?? null;
 
-                if (alumni.length === 0) {
+                if (!renderAlumniTable(alumni, academicYear, total, pagination)) {
                     const interpretation = interpretApiDebug(payload);
                     const apiMessage = payload?.message || 'No alumni found for ' + escapeHtml(academicYear) + '.';
                     let extra = '';
                     if (interpretation.current_acyear_on_server) {
                         extra = '<p class="mt-2 text-gray-500">University server current academic year: <strong>'
                             + escapeHtml(interpretation.current_acyear_on_server) + '</strong>. '
-                            + 'Try a recent year such as <strong>2024/2025</strong> (from your boss\'s sample).</p>';
+                            + 'Try a recent year such as <strong>2024/2025</strong>.</p>';
                     }
                     resultsBody.innerHTML = '<div class="text-gray-700">' + escapeHtml(apiMessage) + extra + '</div>';
-                    return;
+                    paginationPanel?.classList.add('hidden');
                 }
-
-                const rowsHtml = alumni.map(a => {
-                    const name = a.fullname || a.full_name || a.name || (
-                        (a.first_name || '') + ' ' + (a.last_name || '')
-                    ).trim();
-
-                    const year = a.acyear || a.acc_year || a.year_of_completion || a.academic_year || a.graduation_year || '';
-                    const programme = a.programme || a.program || a.course || '';
-                    const status = a.final_remarks || a.verification_status || a.status || '';
-                    const studentId = a.index_number || a.student_id || '';
-
-                    return `
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${escapeHtml(name || 'N/A')}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${escapeHtml(studentId || 'N/A')}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${escapeHtml(programme || 'N/A')}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${escapeHtml(year || 'N/A')}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${escapeHtml(a.email || 'N/A')}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${escapeHtml(a.phone || 'N/A')}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                ${status ? '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">' + escapeHtml(status) + '</span>' : 'N/A'}
-                            </td>
-                        </tr>
-                    `;
-                }).join('');
-
-                resultsBody.innerHTML = `
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student ID</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Programme</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Academic Year</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            ${rowsHtml}
-                        </tbody>
-                    </table>
-                `;
             } catch (e) {
                 renderDebug(appRequest, { error: e?.message || String(e) });
                 resultsBody.innerHTML = '<div class="text-red-600">Unexpected error: ' + escapeHtml(e?.message || String(e)) + '</div>';
                 resultsTitle.textContent = 'Alumni results (error)';
+                paginationPanel?.classList.add('hidden');
             } finally {
                 statusEl?.classList.add('hidden');
             }
+        }
+
+        fetchBtn?.addEventListener('click', async () => {
+            const academicYear = yearSelect?.value;
+
+            if (!academicYear) {
+                resultsBody.innerHTML = '<div class="text-red-600">Please select an academic year.</div>';
+                paginationPanel?.classList.add('hidden');
+                return;
+            }
+
+            await loadAlumniPage(academicYear, 1, true);
+        });
+
+        paginationPrev?.addEventListener('click', async () => {
+            if (!currentAcademicYear || currentPage <= 1) return;
+            await loadAlumniPage(currentAcademicYear, currentPage - 1, false);
+        });
+
+        paginationNext?.addEventListener('click', async () => {
+            if (!currentAcademicYear) return;
+            await loadAlumniPage(currentAcademicYear, currentPage + 1, false);
         });
     });
 </script>
