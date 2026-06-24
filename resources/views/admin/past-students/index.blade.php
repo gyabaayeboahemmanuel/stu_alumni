@@ -44,10 +44,32 @@
     </div>
 
     <div id="past_students_results" class="card overflow-hidden mb-6">
-        <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+        <div class="px-6 py-4 border-b border-gray-200 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
             <h2 id="results_title" class="text-lg font-semibold text-gray-900">
                 Alumni results
             </h2>
+            <div id="results_search_wrap" class="hidden w-full sm:w-auto sm:min-w-[280px]">
+                <label for="results_search" class="sr-only">Search loaded list</label>
+                <div class="relative">
+                    <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                    <input
+                        type="search"
+                        id="results_search"
+                        class="form-input pl-9 pr-9 w-full sm:w-72"
+                        placeholder="Search name, ID, programme, email…"
+                        autocomplete="off"
+                    >
+                    <button
+                        type="button"
+                        id="results_search_clear"
+                        class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 hidden"
+                        title="Clear search"
+                        aria-label="Clear search"
+                    >
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
         </div>
 
         <div class="overflow-x-auto">
@@ -223,12 +245,17 @@
         const paginationPageLabel = document.getElementById('pagination_page_label');
         const paginationPrev = document.getElementById('pagination_prev');
         const paginationNext = document.getElementById('pagination_next');
+        const searchWrap = document.getElementById('results_search_wrap');
+        const searchInput = document.getElementById('results_search');
+        const searchClearBtn = document.getElementById('results_search_clear');
 
         const fetchRoute = '{{ route('admin.past-students.fetch') }}';
         let currentAcademicYear = '';
         let currentPage = 1;
+        let currentSearch = '';
+        let searchDebounceTimer = null;
 
-        function buildFetchUrl(academicYear, page, refresh) {
+        function buildFetchUrl(academicYear, page, refresh, search) {
             const params = new URLSearchParams({
                 academic_year: academicYear,
                 page: String(page),
@@ -236,31 +263,53 @@
             if (refresh) {
                 params.set('refresh', '1');
             }
+            if (search) {
+                params.set('search', search);
+            }
             return fetchRoute + '?' + params.toString();
         }
 
-        function updatePaginationControls(pagination, total) {
+        function updateSearchControls() {
+            const hasSearch = currentSearch.length > 0;
+            searchClearBtn?.classList.toggle('hidden', !hasSearch);
+        }
+
+        function buildResultsTitle(total, totalInList, search) {
+            if (search) {
+                return 'Alumni results (' + total + ' of ' + totalInList + ' matching)';
+            }
+            return 'Alumni results (' + total + ')';
+        }
+
+        function updatePaginationControls(pagination, total, totalInList, search) {
             if (!pagination || total === 0) {
                 paginationPanel?.classList.add('hidden');
                 return;
             }
 
             paginationPanel?.classList.remove('hidden');
-            paginationSummary.textContent = 'Showing ' + pagination.from + '–' + pagination.to + ' of ' + total;
+            const scope = search
+                ? pagination.from + '–' + pagination.to + ' of ' + total + ' matches'
+                : pagination.from + '–' + pagination.to + ' of ' + totalInList;
+            paginationSummary.textContent = 'Showing ' + scope;
             paginationPageLabel.textContent = 'Page ' + pagination.current_page + ' of ' + pagination.last_page;
             paginationPrev.disabled = pagination.current_page <= 1;
             paginationNext.disabled = pagination.current_page >= pagination.last_page;
         }
 
-        function renderAlumniTable(alumni, academicYear, total, pagination) {
-            resultsTitle.textContent = 'Alumni results (' + total + ')';
-            updatePaginationControls(pagination, total);
+        function renderAlumniTable(alumni, total, totalInList, pagination, search) {
+            resultsTitle.textContent = buildResultsTitle(total, totalInList, search);
+            updatePaginationControls(pagination, total, totalInList, search);
+            searchWrap?.classList.remove('hidden');
 
             if (alumni.length === 0) {
                 return false;
             }
 
-            const rowsHtml = alumni.map(a => {
+            const rowOffset = (pagination?.from ?? 1) - 1;
+
+            const rowsHtml = alumni.map((a, index) => {
+                const sn = rowOffset + index + 1;
                 const name = a.fullname || a.full_name || a.name || (
                     (a.first_name || '') + ' ' + (a.last_name || '')
                 ).trim();
@@ -272,6 +321,7 @@
 
                 return `
                     <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500 tabular-nums">${sn}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${escapeHtml(name || 'N/A')}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${escapeHtml(studentId || 'N/A')}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${escapeHtml(programme || 'N/A')}</td>
@@ -289,6 +339,7 @@
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-12">SN</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student ID</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Programme</th>
@@ -307,17 +358,21 @@
             return true;
         }
 
-        async function loadAlumniPage(academicYear, page, refresh) {
+        async function loadAlumniPage(academicYear, page, refresh, search) {
             currentAcademicYear = academicYear;
             currentPage = page;
+            currentSearch = search ?? currentSearch;
 
             statusEl?.classList.remove('hidden');
-            const loadingMsg = refresh
-                ? 'Fetching alumni from university…'
-                : 'Loading page ' + page + '…';
+            let loadingMsg = 'Loading page ' + page + '…';
+            if (refresh) {
+                loadingMsg = 'Fetching alumni from university…';
+            } else if (currentSearch) {
+                loadingMsg = 'Searching…';
+            }
             resultsBody.innerHTML = '<div class="text-gray-600">' + loadingMsg + '</div>';
 
-            const fetchUrl = buildFetchUrl(academicYear, page, refresh);
+            const fetchUrl = buildFetchUrl(academicYear, page, refresh, currentSearch);
             const appRequest = {
                 method: 'GET',
                 url: fetchUrl,
@@ -334,32 +389,35 @@
                     resultsBody.innerHTML = '<div class="text-red-600">' + escapeHtml(msg) + '</div>';
                     resultsTitle.textContent = 'Alumni results (error)';
                     paginationPanel?.classList.add('hidden');
+                    searchWrap?.classList.add('hidden');
                     return;
                 }
 
                 const alumni = normalizeAlumniPayload(payload);
                 const total = payload?.total ?? alumni.length;
+                const totalInList = payload?.total_in_list ?? total;
                 const pagination = payload?.pagination ?? null;
+                const search = payload?.search ?? currentSearch;
 
-                if (!renderAlumniTable(alumni, academicYear, total, pagination)) {
-                    const interpretation = interpretApiDebug(payload);
-                    const apiMessage = payload?.message || 'No alumni found for ' + escapeHtml(academicYear) + '.';
-                    let extra = '';
-                    if (interpretation.current_acyear_on_server) {
-                        extra = '<p class="mt-2 text-gray-500">University server current academic year: <strong>'
-                            + escapeHtml(interpretation.current_acyear_on_server) + '</strong>. '
-                            + 'Try a recent year such as <strong>2024/2025</strong>.</p>';
-                    }
-                    resultsBody.innerHTML = '<div class="text-gray-700">' + escapeHtml(apiMessage) + extra + '</div>';
+                if (!renderAlumniTable(alumni, total, totalInList, pagination, search)) {
+                    const apiMessage = payload?.message
+                        || (search ? 'No alumni match "' + escapeHtml(search) + '".' : 'No alumni found for ' + escapeHtml(academicYear) + '.');
+                    resultsBody.innerHTML = '<div class="text-gray-700">' + escapeHtml(apiMessage) + '</div>';
                     paginationPanel?.classList.add('hidden');
+                    if (totalInList > 0) {
+                        searchWrap?.classList.remove('hidden');
+                        resultsTitle.textContent = buildResultsTitle(total, totalInList, search);
+                    }
                 }
             } catch (e) {
                 renderDebug(appRequest, { error: e?.message || String(e) });
                 resultsBody.innerHTML = '<div class="text-red-600">Unexpected error: ' + escapeHtml(e?.message || String(e)) + '</div>';
                 resultsTitle.textContent = 'Alumni results (error)';
                 paginationPanel?.classList.add('hidden');
+                searchWrap?.classList.add('hidden');
             } finally {
                 statusEl?.classList.add('hidden');
+                updateSearchControls();
             }
         }
 
@@ -369,20 +427,45 @@
             if (!academicYear) {
                 resultsBody.innerHTML = '<div class="text-red-600">Please select an academic year.</div>';
                 paginationPanel?.classList.add('hidden');
+                searchWrap?.classList.add('hidden');
                 return;
             }
 
-            await loadAlumniPage(academicYear, 1, true);
+            currentSearch = '';
+            if (searchInput) {
+                searchInput.value = '';
+            }
+            updateSearchControls();
+            await loadAlumniPage(academicYear, 1, true, '');
         });
 
         paginationPrev?.addEventListener('click', async () => {
             if (!currentAcademicYear || currentPage <= 1) return;
-            await loadAlumniPage(currentAcademicYear, currentPage - 1, false);
+            await loadAlumniPage(currentAcademicYear, currentPage - 1, false, currentSearch);
         });
 
         paginationNext?.addEventListener('click', async () => {
             if (!currentAcademicYear) return;
-            await loadAlumniPage(currentAcademicYear, currentPage + 1, false);
+            await loadAlumniPage(currentAcademicYear, currentPage + 1, false, currentSearch);
+        });
+
+        searchInput?.addEventListener('input', () => {
+            if (!currentAcademicYear) return;
+
+            clearTimeout(searchDebounceTimer);
+            searchDebounceTimer = setTimeout(async () => {
+                currentSearch = searchInput.value.trim();
+                updateSearchControls();
+                await loadAlumniPage(currentAcademicYear, 1, false, currentSearch);
+            }, 350);
+        });
+
+        searchClearBtn?.addEventListener('click', async () => {
+            if (!currentAcademicYear || !searchInput) return;
+            searchInput.value = '';
+            currentSearch = '';
+            updateSearchControls();
+            await loadAlumniPage(currentAcademicYear, 1, false, '');
         });
     });
 </script>

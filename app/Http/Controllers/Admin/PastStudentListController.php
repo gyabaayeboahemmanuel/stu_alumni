@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Log;
 
 class PastStudentListController extends Controller
 {
-    private const PER_PAGE = 500;
+    private const PER_PAGE = 200;
 
     private const CACHE_TTL_SECONDS = 3600;
 
@@ -46,11 +46,13 @@ class PastStudentListController extends Controller
             'academic_year' => ['required', 'regex:/^\d{4}\/\d{4}$/'],
             'page' => ['sometimes', 'integer', 'min:1'],
             'per_page' => ['sometimes', 'integer', 'min:1', 'max:' . self::PER_PAGE],
+            'search' => ['sometimes', 'nullable', 'string', 'max:100'],
         ]);
 
         $academicYear = $validated['academic_year'];
         $page = (int) ($validated['page'] ?? 1);
         $perPage = (int) ($validated['per_page'] ?? self::PER_PAGE);
+        $search = trim((string) ($validated['search'] ?? ''));
         $refresh = $request->boolean('refresh');
         $cacheKey = 'past_students:' . str_replace('/', '-', $academicYear);
 
@@ -81,11 +83,15 @@ class PastStudentListController extends Controller
             }
 
             $allRecords = $cached['data'] ?? [];
-            $total = (int) ($cached['total'] ?? count($allRecords));
+            $totalInList = (int) ($cached['total'] ?? count($allRecords));
+            $filteredRecords = $search !== ''
+                ? $this->filterRecords($allRecords, $search)
+                : $allRecords;
+            $total = count($filteredRecords);
             $lastPage = max(1, (int) ceil($total / $perPage));
             $page = min($page, $lastPage);
             $offset = ($page - 1) * $perPage;
-            $pageData = array_slice($allRecords, $offset, $perPage);
+            $pageData = array_slice($filteredRecords, $offset, $perPage);
 
             $debug = [
                 'from_cache' => $fromCache,
@@ -104,7 +110,11 @@ class PastStudentListController extends Controller
                 'state' => $cached['state'] ?? 'success',
                 'acyear' => $academicYear,
                 'total' => $total,
-                'message' => $total === 0 ? ($cached['message'] ?? 'No alumni found for this academic year.') : null,
+                'total_in_list' => $totalInList,
+                'search' => $search !== '' ? $search : null,
+                'message' => $totalInList === 0
+                    ? ($cached['message'] ?? 'No alumni found for this academic year.')
+                    : ($total === 0 && $search !== '' ? 'No alumni match your search.' : null),
                 'data' => $pageData,
                 'pagination' => [
                     'current_page' => $page,
@@ -127,5 +137,38 @@ class PastStudentListController extends Controller
         }
     }
 
+    /**
+     * @param  array<int, array<string, mixed>>  $records
+     * @return array<int, array<string, mixed>>
+     */
+    private function filterRecords(array $records, string $search): array
+    {
+        $needle = mb_strtolower($search);
+
+        return array_values(array_filter($records, function (array $record) use ($needle) {
+            $haystack = mb_strtolower(implode(' ', array_filter([
+                $record['fullname'] ?? null,
+                $record['full_name'] ?? null,
+                $record['name'] ?? null,
+                $record['surname'] ?? null,
+                $record['othernames'] ?? null,
+                $record['first_name'] ?? null,
+                $record['last_name'] ?? null,
+                $record['index_number'] ?? null,
+                $record['student_id'] ?? null,
+                $record['email'] ?? null,
+                $record['phone'] ?? null,
+                $record['dept'] ?? null,
+                $record['program'] ?? null,
+                $record['programme'] ?? null,
+                $record['course'] ?? null,
+                $record['acc_year'] ?? null,
+                $record['acyear'] ?? null,
+                $record['final_remarks'] ?? null,
+            ])));
+
+            return $haystack !== '' && str_contains($haystack, $needle);
+        }));
+    }
 }
 
