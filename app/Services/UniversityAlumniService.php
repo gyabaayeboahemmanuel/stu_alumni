@@ -81,7 +81,7 @@ class UniversityAlumniService
         ]);
 
         $response = $this->http()
-            ->asJson()
+            ->asForm()
             ->post($this->endpoint, $requestBody);
 
         $debug = $this->buildDebugInfo($requestBody, $response);
@@ -142,6 +142,15 @@ class UniversityAlumniService
             ];
         }
 
+        if ($apiStatus === 400) {
+            return [
+                'success' => false,
+                'message' => $payload['state'] ?? 'University API rejected the request.',
+                'data' => [],
+                'debug' => $debug,
+            ];
+        }
+
         if ($apiStatus === 404 || empty($records)) {
             return [
                 'success' => true,
@@ -170,7 +179,7 @@ class UniversityAlumniService
             'university_method' => 'POST',
             'university_request' => $requestBody,
             'university_headers' => [
-                'Content-Type' => 'application/json',
+                'Content-Type' => 'application/x-www-form-urlencoded',
                 'Accept' => 'application/json',
                 'Authorization' => $this->apiKey !== ''
                     ? 'Bearer ' . $this->maskToken($this->apiKey)
@@ -191,12 +200,25 @@ class UniversityAlumniService
     }
 
     /**
-     * Identity API often wraps results: { status, desc, detail: { state, data, ... } }
+     * Identity API wraps errors: { status, desc, detail: { state, data, ... } }
+     * Successful form posts return: [[{...}, {...}]]
      */
     private function normalizePayload(array $raw): array
     {
         if (isset($raw['detail']) && is_array($raw['detail'])) {
             return $raw['detail'];
+        }
+
+        if (isset($raw[0]) && is_array($raw[0])) {
+            $records = $raw[0];
+            if ($records !== [] && is_array($records[0] ?? null)) {
+                return [
+                    'state' => 'success',
+                    'data' => $records,
+                    'total' => count($records),
+                    'total_pages' => 1,
+                ];
+            }
         }
 
         return $raw;
@@ -206,7 +228,6 @@ class UniversityAlumniService
     {
         $headers = [
             'Accept' => 'application/json',
-            'Content-Type' => 'application/json',
         ];
 
         if ($this->apiKey !== '') {
