@@ -73,8 +73,23 @@
         </div>
 
         <div class="overflow-x-auto">
-            <div id="results_body" class="p-6 text-sm text-gray-600">
-                Select an academic year and click <strong>Fetch</strong>.
+            <div id="results_body" class="text-sm text-gray-600">
+                <p id="results_placeholder" class="p-6">Select an academic year and click <strong>Fetch</strong>.</p>
+                <table id="results_table" class="min-w-full divide-y divide-gray-200 hidden">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-12">SN</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student ID</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Programme</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Academic Year</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="results_tbody" class="bg-white divide-y divide-gray-200"></tbody>
+                </table>
             </div>
         </div>
 
@@ -123,7 +138,8 @@
             border: 1px solid #cbd5e1;
             padding: 1rem;
             border-radius: 0.5rem;
-            overflow-x: auto;
+            overflow: auto;
+            max-height: 16rem;
             font-size: 12px;
             line-height: 1.5;
             white-space: pre-wrap;
@@ -153,6 +169,29 @@
         if (Array.isArray(payload.students)) return payload.students;
         if (Array.isArray(payload.results)) return payload.results;
         return [];
+    }
+
+    function summarizeForDebug(value) {
+        if (Array.isArray(value)) {
+            return '[Array: ' + value.length + ' items omitted]';
+        }
+        if (!value || typeof value !== 'object') {
+            return value;
+        }
+
+        const copy = { ...value };
+
+        if (Array.isArray(copy.data)) {
+            copy.data = '[Page data: ' + copy.data.length + ' records omitted]';
+        }
+
+        if (copy.debug?.university?.university_response) {
+            const uni = { ...copy.debug.university };
+            uni.university_response = summarizeForDebug(uni.university_response);
+            copy.debug = { ...copy.debug, university: uni };
+        }
+
+        return copy;
     }
 
     function interpretApiDebug(payload) {
@@ -202,12 +241,13 @@
         }
 
         const interpretation = interpretApiDebug(payload);
-        const sent = {
+        const sent = summarizeForDebug({
             interpretation: interpretation,
             app_request: appRequest,
-            university: payload?.debug?.university ?? payload?.debug ?? null,
+            university: payload?.debug?.university ?? null,
             from_cache: payload?.debug?.from_cache ?? false,
-        };
+        });
+        const safePayload = summarizeForDebug(payload);
 
         if (debugSummary) {
             debugSummary.innerHTML = `
@@ -225,13 +265,8 @@
         }
 
         debugRequest.textContent = JSON.stringify(sent, null, 2);
-        debugResponse.textContent = JSON.stringify(payload, null, 2);
+        debugResponse.textContent = JSON.stringify(safePayload, null, 2);
         debugPanel.classList.remove('hidden');
-
-        console.group('Past Student List — API Debug');
-        console.log('Request sent:', sent);
-        console.log('Response received:', payload);
-        console.groupEnd();
     }
 
     document.addEventListener('DOMContentLoaded', function () {
@@ -239,6 +274,9 @@
         const fetchBtn = document.getElementById('fetch_past_students');
         const statusEl = document.getElementById('fetch_status');
         const resultsBody = document.getElementById('results_body');
+        const resultsPlaceholder = document.getElementById('results_placeholder');
+        const resultsTable = document.getElementById('results_table');
+        const resultsTbody = document.getElementById('results_tbody');
         const resultsTitle = document.getElementById('results_title');
         const paginationPanel = document.getElementById('results_pagination');
         const paginationSummary = document.getElementById('pagination_summary');
@@ -297,63 +335,67 @@
             paginationNext.disabled = pagination.current_page >= pagination.last_page;
         }
 
+        function showResultsMessage(html, isError) {
+            resultsTable?.classList.add('hidden');
+            resultsPlaceholder?.classList.remove('hidden');
+            if (resultsPlaceholder) {
+                resultsPlaceholder.className = 'p-6 ' + (isError ? 'text-red-600' : 'text-gray-600');
+                resultsPlaceholder.innerHTML = html;
+            }
+            if (resultsTbody) {
+                resultsTbody.innerHTML = '';
+            }
+        }
+
         function renderAlumniTable(alumni, total, totalInList, pagination, search) {
             resultsTitle.textContent = buildResultsTitle(total, totalInList, search);
             updatePaginationControls(pagination, total, totalInList, search);
             searchWrap?.classList.remove('hidden');
 
-            if (alumni.length === 0) {
+            const perPage = pagination?.per_page ?? 200;
+            const pageRows = alumni.slice(0, perPage);
+
+            if (pageRows.length === 0) {
                 return false;
             }
 
             const rowOffset = (pagination?.from ?? 1) - 1;
+            const fragment = document.createDocumentFragment();
 
-            const rowsHtml = alumni.map((a, index) => {
+            pageRows.forEach((a, index) => {
                 const sn = rowOffset + index + 1;
                 const name = a.fullname || a.full_name || a.name || (
                     (a.first_name || '') + ' ' + (a.last_name || '')
                 ).trim();
-
                 const year = a.acyear || a.acc_year || a.year_of_completion || a.academic_year || a.graduation_year || '';
                 const programme = a.programme || a.program || a.course || '';
                 const status = a.final_remarks || a.verification_status || a.status || '';
                 const studentId = a.index_number || a.student_id || '';
 
-                return `
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500 tabular-nums">${sn}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${escapeHtml(name || 'N/A')}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${escapeHtml(studentId || 'N/A')}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${escapeHtml(programme || 'N/A')}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${escapeHtml(year || 'N/A')}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${escapeHtml(a.email || 'N/A')}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${escapeHtml(a.phone || 'N/A')}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">
-                            ${status ? '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">' + escapeHtml(status) + '</span>' : 'N/A'}
-                        </td>
-                    </tr>
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50';
+                row.innerHTML = `
+                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500 tabular-nums">${sn}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${escapeHtml(name || 'N/A')}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${escapeHtml(studentId || 'N/A')}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${escapeHtml(programme || 'N/A')}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${escapeHtml(year || 'N/A')}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${escapeHtml(a.email || 'N/A')}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${escapeHtml(a.phone || 'N/A')}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        ${status ? '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">' + escapeHtml(status) + '</span>' : 'N/A'}
+                    </td>
                 `;
-            }).join('');
+                fragment.appendChild(row);
+            });
 
-            resultsBody.innerHTML = `
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-12">SN</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student ID</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Programme</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Academic Year</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        ${rowsHtml}
-                    </tbody>
-                </table>
-            `;
+            if (resultsTbody) {
+                resultsTbody.innerHTML = '';
+                resultsTbody.appendChild(fragment);
+            }
+
+            resultsPlaceholder?.classList.add('hidden');
+            resultsTable?.classList.remove('hidden');
 
             return true;
         }
@@ -370,7 +412,7 @@
             } else if (currentSearch) {
                 loadingMsg = 'Searching…';
             }
-            resultsBody.innerHTML = '<div class="text-gray-600">' + loadingMsg + '</div>';
+            showResultsMessage(loadingMsg, false);
 
             const fetchUrl = buildFetchUrl(academicYear, page, refresh, currentSearch);
             const appRequest = {
@@ -386,7 +428,7 @@
 
                 if (!response.ok) {
                     const msg = payload?.error || 'Request failed.';
-                    resultsBody.innerHTML = '<div class="text-red-600">' + escapeHtml(msg) + '</div>';
+                    showResultsMessage(escapeHtml(msg), true);
                     resultsTitle.textContent = 'Alumni results (error)';
                     paginationPanel?.classList.add('hidden');
                     searchWrap?.classList.add('hidden');
@@ -402,7 +444,7 @@
                 if (!renderAlumniTable(alumni, total, totalInList, pagination, search)) {
                     const apiMessage = payload?.message
                         || (search ? 'No alumni match "' + escapeHtml(search) + '".' : 'No alumni found for ' + escapeHtml(academicYear) + '.');
-                    resultsBody.innerHTML = '<div class="text-gray-700">' + escapeHtml(apiMessage) + '</div>';
+                    showResultsMessage(escapeHtml(apiMessage), false);
                     paginationPanel?.classList.add('hidden');
                     if (totalInList > 0) {
                         searchWrap?.classList.remove('hidden');
@@ -411,7 +453,7 @@
                 }
             } catch (e) {
                 renderDebug(appRequest, { error: e?.message || String(e) });
-                resultsBody.innerHTML = '<div class="text-red-600">Unexpected error: ' + escapeHtml(e?.message || String(e)) + '</div>';
+                showResultsMessage('Unexpected error: ' + escapeHtml(e?.message || String(e)), true);
                 resultsTitle.textContent = 'Alumni results (error)';
                 paginationPanel?.classList.add('hidden');
                 searchWrap?.classList.add('hidden');
@@ -425,7 +467,7 @@
             const academicYear = yearSelect?.value;
 
             if (!academicYear) {
-                resultsBody.innerHTML = '<div class="text-red-600">Please select an academic year.</div>';
+                showResultsMessage('Please select an academic year.', true);
                 paginationPanel?.classList.add('hidden');
                 searchWrap?.classList.add('hidden');
                 return;

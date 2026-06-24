@@ -113,7 +113,7 @@ class UniversityAlumniService
             ];
         }
 
-        $debug['university_response'] = $raw;
+        $debug['university_response'] = $this->summarizeUniversityResponse($raw);
         $debug['limit_sent'] = $limit;
 
         $payload = $this->normalizePayload($raw);
@@ -197,6 +197,28 @@ class UniversityAlumniService
         }
 
         return substr($token, 0, 8) . '...' . substr($token, -8) . ' (len:' . strlen($token) . ')';
+    }
+
+    /**
+     * Keep debug payloads small — never embed thousands of alumni records.
+     */
+    private function summarizeUniversityResponse(array $raw): array
+    {
+        if (isset($raw[0]) && is_array($raw[0]) && is_array($raw[0][0] ?? null)) {
+            return [
+                'format' => 'nested_array',
+                'record_count' => count($raw[0]),
+                'sample_record' => $raw[0][0] ?? null,
+                'note' => 'Full university response omitted from debug output.',
+            ];
+        }
+
+        if (isset($raw['detail']['data']) && is_array($raw['detail']['data'])) {
+            $raw['detail']['data'] = array_slice($raw['detail']['data'], 0, 1);
+            $raw['detail']['data_truncated'] = true;
+        }
+
+        return $raw;
     }
 
     /**

@@ -103,7 +103,7 @@ class PastStudentListController extends Controller
             ];
 
             if ($universityDebug) {
-                $debug['university'] = $universityDebug;
+                $debug['university'] = $this->summarizeUniversityDebug($universityDebug);
             }
 
             return response()->json([
@@ -135,6 +135,31 @@ class PastStudentListController extends Controller
                 'error' => 'Failed to fetch alumni from university API.',
             ], 500);
         }
+    }
+
+    /**
+     * @param  array<string, mixed>  $debug
+     * @return array<string, mixed>
+     */
+    private function summarizeUniversityDebug(array $debug): array
+    {
+        if (isset($debug['university_response']) && is_array($debug['university_response'])) {
+            $response = $debug['university_response'];
+
+            if (isset($response[0]) && is_array($response[0])) {
+                $debug['university_response'] = [
+                    'format' => 'nested_array',
+                    'record_count' => count($response[0]),
+                    'note' => 'Full university response omitted from debug output.',
+                ];
+            } elseif (isset($response['detail']['data']) && is_array($response['detail']['data'])) {
+                $debug['university_response'] = $response;
+                $debug['university_response']['detail']['data'] = array_slice($response['detail']['data'], 0, 1);
+                $debug['university_response']['detail']['data_truncated'] = true;
+            }
+        }
+
+        return $debug;
     }
 
     /**
