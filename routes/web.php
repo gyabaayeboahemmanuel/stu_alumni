@@ -35,22 +35,21 @@ Route::get('/', function () {
 
 // Authentication Routes
 Route::middleware('guest')->group(function () {
-    // Registration
+    // Registration pages (guests only)
     Route::get('/register', [AuthController::class, 'register'])->name('register');
     Route::get('/register/sis', [AuthController::class, 'register'])->name('register.sis');
     Route::get('/register/manual', [AuthController::class, 'showManualRegistration'])->name('register.manual');
-    
-    // SIS Registration Process
-    Route::post('/verify-sis', [AuthController::class, 'verifySIS'])->name('verify.sis');
-    Route::post('/register/sis/complete', [AuthController::class, 'completeSISRegistration'])->name('register.sis.complete');
-    
-    // Manual Registration
-    Route::post('/register/manual/process', [AuthController::class, 'processManualRegistration'])->name('register.manual.process');
-    
+
     // Login
     Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [AuthController::class, 'login'])->name('login.process');
 });
+
+// SIS/manual registration APIs — available to guests and authenticated admins
+// (admin uses /admin/alumni/add which reuses the same registration UI)
+Route::post('/verify-sis', [AuthController::class, 'verifySIS'])->name('verify.sis');
+Route::post('/register/sis/complete', [AuthController::class, 'completeSISRegistration'])->name('register.sis.complete');
+Route::post('/register/manual/process', [AuthController::class, 'processManualRegistration'])->name('register.manual.process');
 
 // Public Business Directory
 Route::get('/businesses', [BusinessController::class, 'index'])->name('businesses.public.index');

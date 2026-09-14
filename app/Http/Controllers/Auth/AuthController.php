@@ -313,15 +313,21 @@ class AuthController extends Controller
                 'ip_address' => $request->ip()
             ]);
 
-            // Log the user in
-            Auth::login($user);
+            $addedByAdmin = Auth::check() && Auth::user()->isAdmin();
+
+            // Don't switch the admin session into the newly created alumni account
+            if (!$addedByAdmin) {
+                Auth::login($user);
+            }
 
             return response()->json([
                 'success' => true,
                 'message' => $smsSendError
                     ? 'Registration completed, but SMS delivery failed. Please contact support for assistance.'
-                    : 'Registration completed successfully! A secure password has been generated and sent via SMS to your phone number.',
-                'redirect' => route('alumni.dashboard')
+                    : ($addedByAdmin
+                        ? 'Alumni account created successfully. A temporary password was sent via SMS.'
+                        : 'Registration completed successfully! A secure password has been generated and sent via SMS to your phone number.'),
+                'redirect' => $addedByAdmin ? route('admin.alumni.index') : route('alumni.dashboard')
             ]);
 
         } catch (\Exception $e) {
@@ -451,15 +457,21 @@ class AuthController extends Controller
                 'ip_address' => $request->ip()
             ]);
 
-            // Log the user in
-            Auth::login($user);
+            $addedByAdmin = Auth::check() && Auth::user()->isAdmin();
+
+            // Don't switch the admin session into the newly created alumni account
+            if (!$addedByAdmin) {
+                Auth::login($user);
+            }
 
             return response()->json([
                 'success' => true,
                 'message' => $smsSendError
                     ? 'Registration completed, but SMS delivery failed. Please contact support for assistance.'
-                    : 'Registration completed successfully! A secure password has been generated and sent via SMS to your phone number.',
-                'redirect' => route('alumni.dashboard')
+                    : ($addedByAdmin
+                        ? 'Alumni account created successfully. A temporary password was sent via SMS.'
+                        : 'Registration completed successfully! A secure password has been generated and sent via SMS to your phone number.'),
+                'redirect' => $addedByAdmin ? route('admin.alumni.index') : route('alumni.dashboard')
             ]);
 
         } catch (\Exception $e) {
