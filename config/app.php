@@ -37,8 +37,8 @@ return [
     | Uses the same pattern as IRMTS for consistency.
     |
     */
-    'remote_url' =>env('REMOTE', 'https://stu.edu.gh/identity/secure_staff_std'),
-    'remote_secret'=>env('CODE'),
+    'remote_url' => env('REMOTE', 'https://identity.stu.edu.gh/secure_staff_std.php'),
+    'remote_secret' => env('CODE'),
     
     /*
     |--------------------------------------------------------------------------

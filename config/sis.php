@@ -13,7 +13,7 @@ return [
 
     'enabled' => env('SIS_ENABLED', true),
     
-    'base_url' => env('REMOTE', 'https://stu.edu.gh/identity/verify_connect_api'),
+    'base_url' => env('REMOTE', 'https://identity.stu.edu.gh/secure_staff_std.php'),
     
     'api_key' => env('CODE', 'DEV1'),
     

@@ -19,7 +19,7 @@ class SchoolSystemHelper
     public static function pullData($identifier, $entity = 'student')
     {
         $token = config('app.remote_secret', env('CODE', ''));
-        $remote = config('app.remote_url', env('REMOTE', 'https://stu.edu.gh/identity/secure_staff_std'));
+        $remote = config('app.remote_url', env('REMOTE', 'https://identity.stu.edu.gh/secure_staff_std.php'));
         
         if (!$token || !$remote) {
             Log::warning('School system API not configured', [

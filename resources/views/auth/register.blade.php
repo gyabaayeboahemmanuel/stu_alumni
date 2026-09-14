@@ -514,6 +514,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
+                // HTML/login/error pages often arrive as HTTP 200 after redirects
+                if (/^\s*</.test(cleanResponseText)) {
+                    throw new Error('Verification service returned an unexpected page. Please refresh and try again, or use alternative registration.');
+                }
                 throw new Error('Invalid response from server. Please try again.');
             }
             
